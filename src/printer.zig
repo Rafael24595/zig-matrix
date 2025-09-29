@@ -9,8 +9,12 @@ pub const Printer = struct {
     }
 
     pub fn printf(self: *Printer, comptime fmt: []const u8, args: anytype) !void {
-        const msg = try std.fmt.allocPrint(self.arena.allocator(), fmt, args);
+        const msg = try self.format(fmt, args);
         try self.print(msg);
+    }
+
+    pub fn format(self: *Printer, comptime fmt: []const u8, args: anytype) ![]u8 {
+        return try std.fmt.allocPrint(self.arena.allocator(), fmt, args);
     }
 
     pub fn reset(self: *Printer) void {

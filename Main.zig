@@ -1,13 +1,16 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const color = @import("src/color.zig");
 const console = @import("src/console.zig");
 const matrix = @import("src/matrix.zig");
 
 const MiniLCG = @import("src/mini_lcg.zig").MiniLCG;
 const Printer = @import("src/printer.zig").Printer;
 
-var isDebug = true;
+var isDebug = false;
+var speed: u64 = 50;
+var scaleLen: usize = 10;
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
@@ -31,27 +34,37 @@ pub fn main() !void {
     const cols = winsize.cols;
     const rows = winsize.rows - space;
 
-    var mtrx = matrix.Matrix{ .allocator = &allocator, .lcg = &lcg, .printer = &printer, .debugMode = isDebug };
+    var scale = color.ColorScale{ .allocator = &allocator };
+    try scale.initialize(scaleLen, color.Colors.Green);
 
-    _ = try mtrx.initialize(cols, rows);
+    var mtrx = matrix.Matrix{ 
+        .allocator = &allocator, 
+        .lcg = &lcg, 
+        .printer = &printer, 
+        .scale = &scale,
+        .debugMode = isDebug 
+    };
+
+    try mtrx.initialize(cols, rows);
 
     if (isDebug) {
         try printer.printf("Terminal: {d} rows x {d} columns\n", .{ rows, cols });
         try printer.printf("Matrix of {d}x{d}\n", .{ rows, cols });
     }
 
-    _ = try mtrx.print();
+    try printer.print(console.HIDE_CURSOR);
 
-    // TODO: Implement matrix steps.
-    for (0..10) |frame| {
-        try printer.printf("[TEST_LOOP] Frame {d}\n", .{frame});
-        std.Thread.sleep(1 * std.time.ns_per_s);
+    // TODO: Implement safe exit handler.
+    while (true) {
+        try printer.print(console.RESET_CURSOR);
+        try mtrx.print();
+        try mtrx.next();
+        std.Thread.sleep(speed * std.time.ns_per_ms);
         printer.reset();
     }
 
-    std.Thread.sleep(3 * std.time.ns_per_s);
+    try printer.print(console.SHOW_CURSOR);
 
-    try printer.print(console.CLEAN_CONSOLE);
-
-    _ = mtrx.free();
+    mtrx.free();
+    scale.free();
 }

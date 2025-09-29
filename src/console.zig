@@ -1,7 +1,12 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+pub const HIDE_CURSOR = "\x1b[?25l";
+pub const SHOW_CURSOR = "\x1b[?25h";
+
 pub const CLEAN_CONSOLE = "\x1B[2J\x1B[H";
+pub const RESET_CURSOR = "\x1b[H";
+
 pub const SCALED_CHARACTER = "\x1b[38;2;{d};{d};{d}m{c}\x1b[0m";
 
 pub const WinSize = struct {
