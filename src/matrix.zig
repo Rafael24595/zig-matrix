@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const AsciiGenerator = @import("ascii.zig").AsciiGenerator;
 const console = @import("console.zig");
 
 const MiniLCG = @import("mini_lcg.zig").MiniLCG;
@@ -23,11 +24,12 @@ pub const Matrix = struct {
     allocator: *std.mem.Allocator,
 
     lcg: *MiniLCG,
+    ascii: *AsciiGenerator,
     printer: *Printer,
     scale: *ColorScale,
 
     matrix: ?[]Column = null,
-    
+
     mode: Mode = Mode.Rain,
     debugMode: bool = false,
 
@@ -36,13 +38,10 @@ pub const Matrix = struct {
 
         const matrix = self.matrix.?;
 
-        const ascii_start: u8 = 32;
-        const ascii_end: u8 = 126;
-
         const delayMode: u8 = switch (self.mode) {
             Mode.Rain => @intCast(rows),
             Mode.Wave => @intCast(5),
-            Mode.Wall => 0
+            Mode.Wall => 0,
         };
 
         for (matrix) |*column| {
@@ -52,7 +51,7 @@ pub const Matrix = struct {
             column.loop = 0;
             column.delay = @intCast(delay);
             for (column.column) |*cell| {
-                const random_char = self.lcg.randInRange(ascii_start, ascii_end);
+                const random_char = self.ascii.next();
                 cell.* = random_char;
             }
         }
@@ -74,7 +73,7 @@ pub const Matrix = struct {
                 continue;
             }
 
-            if(column.cursor == column.column.len - 1) {
+            if (column.cursor == column.column.len - 1) {
                 column.cursor = 0;
                 column.loop = column.loop + 1;
                 continue;
@@ -83,8 +82,8 @@ pub const Matrix = struct {
             column.cursor = column.cursor + 1;
         }
     }
-
-    // TODO: Rafactor.
+    
+    // TODO: Refactor after checking the performance impact.
     pub fn print(self: *Matrix) !void {
         if (self.matrix == null or self.matrix.?.len == 0) {
             return;
@@ -94,36 +93,58 @@ pub const Matrix = struct {
         const rows = matrix.len;
         const cols = matrix[0].column.len;
 
-        if (self.debugMode) {
-            for (0..rows) |r| {
-                try self.printer.printf("{d}", .{matrix[r].cursor});
-            }
-        }
-
         const scaleLen: i32 = @intCast(self.scale.len() - 2);
 
-        var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, 0);
+        const maxCharSize = 25;
+        const estimatedSize = rows * cols * maxCharSize;
+        var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, estimatedSize);
         defer buffer.deinit(self.allocator.*);
 
-        for (0..cols) |c| {
-            for (0..rows) |r| {
-                const scaleIndex = self.findScaleIndex(scaleLen, cols, r, c);
-                if (scaleIndex == null) {
+        for (0..cols) |column| {
+            for (0..rows) |row| {
+                const rowRef = matrix[row];
+
+                const iCursor: i32 = @intCast(rowRef.cursor);
+                const iColumn: i32 = @intCast(column);
+                const iColumns: i32 = @intCast(cols);
+
+                var scaleIndex = iCursor - iColumn;
+
+                const tailRange = scaleLen - iCursor;
+                const tailStart = iColumns - tailRange;
+
+                if (rowRef.delay > 0) {
                     try buffer.append(self.allocator.*, ' ');
                     continue;
                 }
 
-                const color = self.scale.find(@intCast(scaleIndex.?));
+                if (scaleIndex < 0) {
+                    if (rowRef.loop == 0) {
+                        try buffer.append(self.allocator.*, ' ');
+                        continue;
+                    }
+
+                    if (column < tailStart) {
+                        try buffer.append(self.allocator.*, ' ');
+                        continue;
+                    }
+
+                    scaleIndex = (scaleLen + tailStart) - iColumn;
+                }
+
+                const color = self.scale.find(@intCast(scaleIndex));
                 if (color == null) {
                     try buffer.append(self.allocator.*, ' ');
                     continue;
                 }
 
-                const formatted = try self.printer.format(console.SCALED_CHARACTER, .{ color.?[0], color.?[1], color.?[2], matrix[r].column[c] });
+                const args = .{ color.?[0], color.?[1], color.?[2], rowRef.column[column] };
+                const formatted = try self.printer.format(console.SCALED_CHARACTER, args);
+                
                 try buffer.appendSlice(self.allocator.*, formatted);
             }
 
-            if (c < cols - 1) {
+            if (column < cols - 1) {
                 try buffer.append(self.allocator.*, '\n');
             }
         }
@@ -131,37 +152,12 @@ pub const Matrix = struct {
         try self.printer.print(buffer.items);
     }
 
-    pub fn findScaleIndex(self: *Matrix, scaleLen: i32, columns: usize, row: usize, column: usize) ?i32 {
-        const iCursor: i32 = @intCast(self.matrix.?[row].cursor);
-        const iColumn: i32 = @intCast(column);
-        const iColumns: i32 = @intCast(columns);
-
-        const scaleIndex = iCursor - iColumn;
-        
-        const tailRange = scaleLen - iCursor;
-        const tailStart = iColumns - tailRange;
-
-        const isWaiting = self.matrix.?[row].delay > 0;
-        const isTailIndexOnFirstLoop = scaleIndex < 0 and self.matrix.?[row].loop == 0;
-        const isTailIndexUnderRange = scaleIndex < 0 and column < tailStart;
-        if (isWaiting or isTailIndexOnFirstLoop or isTailIndexUnderRange) {
-            return null;
-        }
-
-        if (scaleIndex < 0 and column >= tailStart) {
-            return (scaleLen + tailStart) - iColumn;
-        }
-
-        return scaleIndex;
-    }
-
-
     pub fn free(self: *Matrix) void {
         if (self.matrix == null) {
             return;
         }
-        
-         const matrix = self.matrix.?;
+
+        const matrix = self.matrix.?;
 
         for (matrix) |column| {
             self.allocator.free(column.column);
