@@ -49,6 +49,14 @@ pub const ColorScale = struct {
         return self.map.?[index];
     }
 
+    pub fn len(self: *ColorScale) usize {
+        if (self.map == null) {
+            return 0;
+        }
+
+        return self.map.?.len;
+    }
+
     pub fn free(self: *ColorScale) void {
         if (self.map) |m| {
             self.allocator.free(m);

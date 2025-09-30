@@ -6,8 +6,16 @@ const MiniLCG = @import("mini_lcg.zig").MiniLCG;
 const Printer = @import("printer.zig").Printer;
 const ColorScale = @import("color.zig").ColorScale;
 
+pub const Mode = enum {
+    Rain,
+    Wave,
+    Wall,
+};
+
 const Column = struct {
     cursor: usize,
+    delay: usize,
+    loop: usize,
     column: []u8,
 };
 
@@ -20,6 +28,7 @@ pub const Matrix = struct {
 
     matrix: ?[]Column = null,
     
+    mode: Mode = Mode.Rain,
     debugMode: bool = false,
 
     pub fn initialize(self: *Matrix, cols: usize, rows: usize) !void {
@@ -30,9 +39,18 @@ pub const Matrix = struct {
         const ascii_start: u8 = 32;
         const ascii_end: u8 = 126;
 
+        const delayMode: u8 = switch (self.mode) {
+            Mode.Rain => @intCast(rows),
+            Mode.Wave => @intCast(5),
+            Mode.Wall => 0
+        };
+
         for (matrix) |*column| {
+            const delay = self.lcg.randInRange(0, delayMode);
             column.column = try self.allocator.alloc(u8, rows);
             column.cursor = 0;
+            column.loop = 0;
+            column.delay = @intCast(delay);
             for (column.column) |*cell| {
                 const random_char = self.lcg.randInRange(ascii_start, ascii_end);
                 cell.* = random_char;
@@ -51,10 +69,17 @@ pub const Matrix = struct {
         }
 
         for (matrix) |*column| {
-            if(column.cursor == column.column.len - 1) {
-                column.cursor = 0;
+            if (column.delay > 0) {
+                column.delay = column.delay - 1;
                 continue;
             }
+
+            if(column.cursor == column.column.len - 1) {
+                column.cursor = 0;
+                column.loop = column.loop + 1;
+                continue;
+            }
+
             column.cursor = column.cursor + 1;
         }
     }
@@ -75,21 +100,20 @@ pub const Matrix = struct {
             }
         }
 
+        const scaleLen: i32 = @intCast(self.scale.len() - 2);
+
         var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, 0);
         defer buffer.deinit(self.allocator.*);
 
         for (0..cols) |c| {
             for (0..rows) |r| {
-                const ic: i32 = @intCast(matrix[r].cursor);
-                const ir: i32 = @intCast(c);
-                const scaleIndex = ic - ir;
-                
-                if (scaleIndex < 0) {
+                const scaleIndex = self.findScaleIndex(scaleLen, cols, r, c);
+                if (scaleIndex == null) {
                     try buffer.append(self.allocator.*, ' ');
                     continue;
                 }
-                
-                const color = self.scale.find(@intCast(scaleIndex));
+
+                const color = self.scale.find(@intCast(scaleIndex.?));
                 if (color == null) {
                     try buffer.append(self.allocator.*, ' ');
                     continue;
@@ -106,6 +130,31 @@ pub const Matrix = struct {
 
         try self.printer.print(buffer.items);
     }
+
+    pub fn findScaleIndex(self: *Matrix, scaleLen: i32, columns: usize, row: usize, column: usize) ?i32 {
+        const iCursor: i32 = @intCast(self.matrix.?[row].cursor);
+        const iColumn: i32 = @intCast(column);
+        const iColumns: i32 = @intCast(columns);
+
+        const scaleIndex = iCursor - iColumn;
+        
+        const tailRange = scaleLen - iCursor;
+        const tailStart = iColumns - tailRange;
+
+        const isWaiting = self.matrix.?[row].delay > 0;
+        const isTailIndexOnFirstLoop = scaleIndex < 0 and self.matrix.?[row].loop == 0;
+        const isTailIndexUnderRange = scaleIndex < 0 and column < tailStart;
+        if (isWaiting or isTailIndexOnFirstLoop or isTailIndexUnderRange) {
+            return null;
+        }
+
+        if (scaleIndex < 0 and column >= tailStart) {
+            return (scaleLen + tailStart) - iColumn;
+        }
+
+        return scaleIndex;
+    }
+
 
     pub fn free(self: *Matrix) void {
         if (self.matrix == null) {

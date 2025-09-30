@@ -26,7 +26,7 @@ pub fn main() !void {
     const winsize = try console.winSize();
 
     // Tested on Windows CMD.
-    var space: usize = 1;
+    var space: usize = 0;
     if (isDebug) {
         space += 3;
     }
@@ -42,6 +42,7 @@ pub fn main() !void {
         .lcg = &lcg, 
         .printer = &printer, 
         .scale = &scale,
+        .mode = matrix.Mode.Rain,
         .debugMode = isDebug 
     };
 
