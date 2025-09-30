@@ -85,6 +85,7 @@ pub fn run(allocator: *std.mem.Allocator, arena: *std.heap.ArenaAllocator) !void
     }
 
     scale.free();
+    _ = arena.reset(.free_all);
 
     try printer.print(console.CLEAN_CONSOLE);
     try printer.print("\n");
