@@ -12,9 +12,9 @@ pub const Mode = enum {
     Symbols,
     Hex,
     Base64,
-    Blocks,
-    Extended,
-    Katana,
+//    Blocks,
+//    Extended,
+//    Katana,
     Fade
 };
 
@@ -22,9 +22,9 @@ const LETTERS_TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const SYMBOLS_TABLE = "!@#$%^&*()-_=+[]{};:,.<>?/\\|~";
 const HEX_TABLE = "0123456789ABCDEF";
 const BASE64_TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-const BLOCKS_TABLE = "█▓▒░─━│┃┌┐└┘├┤┬┴┼";
-const EXTENDED_TABLE = "§¶±µ¤©®™°•∞≠≈≤≥";
-const KATAKANA_TABLE = "ｦｧｨｩｪｫｬｭｮｯｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ";
+//const BLOCKS_TABLE = "█▓▒░─━│┃┌┐└┘├┤┬┴┼";
+//const EXTENDED_TABLE = "§¶±µ¤©®™°•∞≠≈≤≥";
+//const KATAKANA_TABLE = "ｦｧｨｩｪｫｬｭｮｯｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ";
 const FADE_TABLE = " .:-=+*#%@";
 
 const RangeOrTable = struct {
@@ -62,9 +62,9 @@ pub const AsciiGenerator = struct {
             Mode.Symbols => .{ .start = 0, .end = 0, .table = SYMBOLS_TABLE },
             Mode.Hex => .{ .start = 0, .end = 0, .table = HEX_TABLE },
             Mode.Base64 => .{ .start = 0, .end = 0, .table = BASE64_TABLE },
-            Mode.Blocks => .{ .start = 0, .end = 0, .table = BLOCKS_TABLE },
-            Mode.Extended => .{ .start = 0, .end = 0, .table = EXTENDED_TABLE },
-            Mode.Katana => .{ .start = 0, .end = 0, .table = KATAKANA_TABLE },
+//            Mode.Blocks => .{ .start = 0, .end = 0, .table = BLOCKS_TABLE },
+//            Mode.Extended => .{ .start = 0, .end = 0, .table = EXTENDED_TABLE },
+//            Mode.Katana => .{ .start = 0, .end = 0, .table = KATAKANA_TABLE },
             Mode.Fade => .{ .start = 0, .end = 0, .table = FADE_TABLE },
         };
     }
