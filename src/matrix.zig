@@ -31,7 +31,6 @@ pub const Matrix = struct {
     matrix: ?[]Column = null,
 
     mode: Mode = Mode.Rain,
-    debugMode: bool = false,
 
     pub fn initialize(self: *Matrix, cols: usize, rows: usize) !void {
         self.matrix = try self.allocator.alloc(Column, cols);
