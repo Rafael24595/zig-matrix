@@ -5,48 +5,179 @@ const color = @import("src/color.zig");
 const console = @import("src/console.zig");
 const matrix = @import("src/matrix.zig");
 
+const AllocatorTracer = @import("src/allocator.zig").AllocatorTracer;
+
 const MiniLCG = @import("src/mini_lcg.zig").MiniLCG;
 const ascii = @import("src/ascii.zig");
 const Printer = @import("src/printer.zig").Printer;
 
 var exit_requested: bool = false;
 
-var isDebug = true;
+var debug = false;
+
 var seed: u32 = 1234;
-var speed: u64 = 50;
-var rainColor = color.Colors.Green;
+var milliseconds: u64 = 50;
+var dropLen: usize = 10;
+var rainColor = color.Color.Green;
 var asciiMode = ascii.Mode.Default;
 var matrixMode = matrix.Mode.Rain;
-var dropLen: usize = 10;
 
 pub fn main() !void {
-    var allocator = std.heap.page_allocator;
+    var basePersistentAllocator = std.heap.page_allocator;
+    var persistentAllocator = AllocatorTracer.init(&basePersistentAllocator);
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    var arena = std.heap.ArenaAllocator.init(gpa.allocator());
+    
+    var baseScratchAllocator = gpa.allocator();
+    var scratchAllocator = AllocatorTracer.init(&baseScratchAllocator);
+
+    var arena = std.heap.ArenaAllocator.init(scratchAllocator.allocator());
     defer arena.deinit();
 
-    try run(&allocator, &arena);
+    var printer = Printer{ .arena = &arena, .out = std.fs.File.stdout() };
+    defer printer.reset();
+
+    try processInput(persistentAllocator.allocator(), &printer);
+
+    try run(&persistentAllocator, &scratchAllocator, &printer);
 }
 
-pub fn run(allocator: *std.mem.Allocator, arena: *std.heap.ArenaAllocator) !void {
+pub fn processInput(allocator: std.mem.Allocator, printer: *Printer) !void {
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+    defer printer.reset();
+
+    var i: usize = 1;
+    while (i < args.len) : (i += 1) {
+        const arg = args[i];
+
+        if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
+            try printer.printf(
+                \\Usage: zig-matrix   [options]
+                \\  -h, --help        Show this help message
+                \\  -d                Enable debug mode (default: off)
+                \\  -s  <number>      Random seed (default: {d})
+                \\  -ms <number>      Frame delay in ms (default: {d})
+                \\  -dl <number>      Drop length (default: {d})
+                \\  -c  <color>       Rain color (default: {s})
+                \\  -r  <mode>        ASCII mode (default: {s})
+                \\  -m  <mode>        Matrix mode (default: {s})
+                ,
+                .{ seed, milliseconds, dropLen,
+                   @tagName(rainColor), @tagName(asciiMode), @tagName(matrixMode) }
+            );
+            std.process.exit(0);
+        } else if (std.mem.eql(u8, arg, "-d")) {
+            debug = true;
+        } else if (std.mem.eql(u8, arg, "-s")) {
+            if (i + 1 >= args.len) {
+                try printer.print("Missing argument for -s (seed)\n");
+                std.process.exit(1);
+            }
+            
+            const value = args[i + 1];
+            seed = std.fmt.parseInt(u32, value, 10) catch {
+                try printer.printf("Invalid seed value: {s}\n", .{value});
+                std.process.exit(1);
+            };
+            i += 1;
+        } else if (std.mem.eql(u8, arg, "-ms")) {
+            if (i + 1 >= args.len) {
+                try printer.print("Missing argument for -ms (milliseconds)\n");
+                std.process.exit(1);
+            }
+
+            const value = args[i + 1];
+            milliseconds = std.fmt.parseInt(u64, value, 10) catch {
+                try printer.printf("Invalid milliseconds value: {s}\n", .{value});
+                std.process.exit(1);
+            };
+            i += 1;
+        } else if (std.mem.eql(u8, arg, "-l")) {
+            if (i + 1 >= args.len) {
+                try printer.print("Missing argument for -l (drop length)\n");
+            }
+
+            const value = args[i + 1];
+            dropLen = std.fmt.parseInt(usize, value, 10) catch {
+                try printer.printf("Invalid drop length value: {s}\n", .{value});
+                std.process.exit(1);
+            };
+            i += 1;
+        } else if (std.mem.eql(u8, arg, "-c")) {
+            if (i + 1 >= args.len) {
+                try printer.print("Missing argument for -c (color)\n");
+                std.process.exit(1);
+            }
+
+            const value = args[i + 1];
+            rainColor = std.meta.stringToEnum(color.Color, value) orelse {
+                try printer.printf("Invalid color: {s}\n", .{value});
+                try printEnumOptions(color.Color, printer);
+                std.process.exit(1);
+            };
+            i += 1;
+        } else if (std.mem.eql(u8, arg, "-r")) {
+            if (i + 1 >= args.len) {
+                try printer.printf("Missing argument for -r (ASCII mode)\n", .{});
+                std.process.exit(1);
+            }
+
+            const value = args[i + 1];
+            asciiMode = std.meta.stringToEnum(ascii.Mode, value) orelse {
+                try printer.printf("Invalid ASCII mode: {s}\n", .{value});
+                try printEnumOptions(ascii.Mode, printer);
+                std.process.exit(1);
+            };
+            i += 1;
+        } else if (std.mem.eql(u8, arg, "-m")) {
+            if (i + 1 >= args.len) {
+                try printer.printf("Missing argument for -m (matrix mode)\n", .{});
+                std.process.exit(1);
+            }
+
+            const value = args[i + 1];
+            matrixMode = std.meta.stringToEnum(matrix.Mode, value) orelse {
+                try printer.printf("Invalid matrix mode: {s}\n", .{value});
+                try printEnumOptions(matrix.Mode, printer);
+                std.process.exit(1);
+            };
+            i += 1;
+        } else {
+            try printer.printf("Unknown argument: {s}\n", .{arg});
+            std.process.exit(1);
+        }
+    }
+}
+
+fn printEnumOptions(comptime T: type, printer: *Printer) !void {
+    const info = @typeInfo(T);
+    try printer.print("Valid options: ");
+    inline for (info.@"enum".fields) |field| {
+        try printer.printf("{s} ", .{ field.name });
+    }
+    try printer.print("\n");
+}
+
+pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTracer, printer: *Printer) !void {
     try defineSignalHandlers();
 
+    var allocator = persistentAllocator.allocator();
+
     var lcg = MiniLCG{ .seed = seed };
-    var printer = Printer{ .arena = arena, .out = std.fs.File.stdout() };
 
     var asciiGenerator = ascii.AsciiGenerator.new(&lcg, asciiMode);
-    var scale = color.ColorScale{ .allocator = allocator };
-    try scale.initialize(dropLen, rainColor);
+    var scale = color.ColorScale{ .allocator = &allocator };
+    try scale.initialize(dropLen, color.rgbOf(rainColor));
 
     while (!exit_requested) {
         const winsize = try console.winSize();
 
         // Tested on Windows CMD.
         var space: usize = 0;
-        if (isDebug) {
-            space += 3;
+        if (debug) {
+            space += 4;
         }
 
         const area = winsize.cols * winsize.rows;
@@ -54,7 +185,7 @@ pub fn run(allocator: *std.mem.Allocator, arena: *std.heap.ArenaAllocator) !void
         const cols = winsize.cols;
         const rows = winsize.rows - space;
 
-        var mtrx = matrix.Matrix{ .allocator = allocator, .lcg = &lcg, .printer = &printer, .ascii = &asciiGenerator, .scale = &scale, .mode = matrixMode, .debugMode = isDebug };
+        var mtrx = matrix.Matrix{ .allocator = &allocator, .lcg = &lcg, .printer = printer, .ascii = &asciiGenerator, .scale = &scale, .mode = matrixMode };
 
         try mtrx.initialize(cols, rows);
 
@@ -63,14 +194,15 @@ pub fn run(allocator: *std.mem.Allocator, arena: *std.heap.ArenaAllocator) !void
 
         while (!exit_requested) {
             try printer.print(console.RESET_CURSOR);
-            if (isDebug) {
+            if (debug) {
+                try printer.printf("Persistent memory: {d} | Scratch  memory: {d}\n", .{ persistentAllocator.bytes(), scratchAllocator.bytes()});
                 try printer.printf("Seed: {d}\n", .{seed});
-                try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any}\n", .{ speed, asciiMode, rainColor, matrixMode });
+                try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any}\n", .{ milliseconds, asciiMode, rainColor, matrixMode });
                 try printer.printf("Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ rows * cols, cols, rows, dropLen });
             }
             try mtrx.print();
             try mtrx.next();
-            std.Thread.sleep(speed * std.time.ns_per_ms);
+            std.Thread.sleep(milliseconds * std.time.ns_per_ms);
             printer.reset();
 
             const newWinsize = try console.winSize();
@@ -85,7 +217,7 @@ pub fn run(allocator: *std.mem.Allocator, arena: *std.heap.ArenaAllocator) !void
     }
 
     scale.free();
-    _ = arena.reset(.free_all);
+    printer.reset();
 
     try printer.print(console.CLEAN_CONSOLE);
     try printer.print("\n");
