@@ -38,12 +38,12 @@ pub fn main() !void {
     var printer = Printer{ .arena = &arena, .out = std.fs.File.stdout() };
     defer printer.reset();
 
-    try processInput(persistentAllocator.allocator(), &printer);
+    try processArgs(persistentAllocator.allocator(), &printer);
 
     try run(&persistentAllocator, &scratchAllocator, &printer);
 }
 
-pub fn processInput(allocator: std.mem.Allocator, printer: *Printer) !void {
+pub fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
     defer printer.reset();
@@ -59,10 +59,13 @@ pub fn processInput(allocator: std.mem.Allocator, printer: *Printer) !void {
                 \\  -d                Enable debug mode (default: off)
                 \\  -s  <number>      Random seed (default: {d})
                 \\  -ms <number>      Frame delay in ms (default: {d})
-                \\  -dl <number>      Drop length (default: {d})
+                \\  -l <number>       Drop length (default: {d})
                 \\  -c  <color>       Rain color (default: {s})
+                \\                      (use "help" to list available colors)
                 \\  -r  <mode>        ASCII mode (default: {s})
+                \\                      (use "help" to list available modes)
                 \\  -m  <mode>        Matrix mode (default: {s})
+                \\                      (use "help" to list available modes)
                 ,
                 .{ seed, milliseconds, dropLen,
                    @tagName(rainColor), @tagName(asciiMode), @tagName(matrixMode) }
@@ -112,6 +115,11 @@ pub fn processInput(allocator: std.mem.Allocator, printer: *Printer) !void {
             }
 
             const value = args[i + 1];
+            if (std.mem.eql(u8, value, "help")) {
+                try printEnumOptionsWithTitle(color.Color, "Color", printer);
+                std.process.exit(1);
+            }
+
             rainColor = std.meta.stringToEnum(color.Color, value) orelse {
                 try printer.printf("Invalid color: {s}\n", .{value});
                 try printEnumOptions(color.Color, printer);
@@ -125,6 +133,11 @@ pub fn processInput(allocator: std.mem.Allocator, printer: *Printer) !void {
             }
 
             const value = args[i + 1];
+            if (std.mem.eql(u8, value, "help")) {
+                try printEnumOptionsWithTitle(ascii.Mode, "ASCII mode", printer);
+                std.process.exit(1);
+            }
+
             asciiMode = std.meta.stringToEnum(ascii.Mode, value) orelse {
                 try printer.printf("Invalid ASCII mode: {s}\n", .{value});
                 try printEnumOptions(ascii.Mode, printer);
@@ -138,6 +151,11 @@ pub fn processInput(allocator: std.mem.Allocator, printer: *Printer) !void {
             }
 
             const value = args[i + 1];
+            if (std.mem.eql(u8, value, "help")) {
+                try printEnumOptionsWithTitle(matrix.Mode, "Matrix", printer);
+                std.process.exit(1);
+            }
+
             matrixMode = std.meta.stringToEnum(matrix.Mode, value) orelse {
                 try printer.printf("Invalid matrix mode: {s}\n", .{value});
                 try printEnumOptions(matrix.Mode, printer);
@@ -152,10 +170,14 @@ pub fn processInput(allocator: std.mem.Allocator, printer: *Printer) !void {
 }
 
 fn printEnumOptions(comptime T: type, printer: *Printer) !void {
+    try printEnumOptionsWithTitle(T, "Available", printer);
+}
+
+fn printEnumOptionsWithTitle(comptime T: type, title: [:0] const u8, printer: *Printer) !void {
     const info = @typeInfo(T);
-    try printer.print("Valid options: ");
+    try printer.printf("{s} options:\n", .{ title });
     inline for (info.@"enum".fields) |field| {
-        try printer.printf("{s} ", .{ field.name });
+        try printer.printf(" - {s}\n", .{ field.name });
     }
     try printer.print("\n");
 }
@@ -177,7 +199,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         // Tested on Windows CMD.
         var space: usize = 0;
         if (debug) {
-            space += 4;
+            space += 3;
         }
 
         const area = winsize.cols * winsize.rows;
@@ -195,10 +217,9 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         while (!exit_requested) {
             try printer.print(console.RESET_CURSOR);
             if (debug) {
-                try printer.printf("Persistent memory: {d} | Scratch  memory: {d}\n", .{ persistentAllocator.bytes(), scratchAllocator.bytes()});
-                try printer.printf("Seed: {d}\n", .{seed});
+                try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentAllocator.bytes(), scratchAllocator.bytes()});
                 try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any}\n", .{ milliseconds, asciiMode, rainColor, matrixMode });
-                try printer.printf("Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ rows * cols, cols, rows, dropLen });
+                try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ seed, rows * cols, cols, rows, dropLen });
             }
             try mtrx.print();
             try mtrx.next();
