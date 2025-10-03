@@ -41,7 +41,7 @@ pub const AsciiGenerator = struct {
 
     table: ?[]const u8 = null,
 
-    pub fn new(lcg: *MiniLCG, mode: Mode) AsciiGenerator {
+    pub fn init(lcg: *MiniLCG, mode: Mode) AsciiGenerator {
         const rng = range(mode);
         return AsciiGenerator{
             .lcg = lcg,

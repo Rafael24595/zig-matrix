@@ -30,7 +30,7 @@ pub const Color = enum {
     NeonRed,
 };
 
-pub const color_values = [_][3]u8{
+const color_values = [_][3]u8{
     .{255, 255, 255}, // White
     .{0,   0,   0},   // Black
     .{255, 0,   0},   // Red
@@ -69,6 +69,23 @@ pub const ColorScale = struct {
     map: ?[][3]u8 = null,
 
     lineal: bool = false,
+
+    pub fn init(allocator: *std.mem.Allocator, scale: usize, base: [3]u8) !ColorScale {
+        var self = ColorScale{ .allocator = allocator };
+
+        self.map = try self.allocator.alloc([3]u8, scale + 1);
+
+        const map = self.map.?;
+        for (0..scale + 1) |i| {
+            if (self.lineal) {
+                map[i] = self.scaleColorLinear(i, scale, base);
+            } else {
+                map[i] = self.scaleColorMiddle(i, scale, base);
+            }
+        }
+
+        return self;
+    }
 
     pub fn initialize(self: *ColorScale, scale: usize, base: [3]u8) !void {
         if (self.map != null) {

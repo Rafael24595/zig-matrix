@@ -11,11 +11,18 @@ const MiniLCG = @import("src/mini_lcg.zig").MiniLCG;
 const ascii = @import("src/ascii.zig");
 const Printer = @import("src/printer.zig").Printer;
 
-var exit_requested: bool = false;
+const Project = struct {
+    name: [] const u8,
+    version: [] const u8,
+};
+
+var project = Project{ .name = "", .version = "" };
 
 var debug = false;
 
-var seed: u32 = 1234;
+var exit_requested: bool = false;
+
+var seed: u64 = 0;
 var milliseconds: u64 = 50;
 var dropLen: usize = 10;
 var rainColor = color.Color.Green;
@@ -38,12 +45,27 @@ pub fn main() !void {
     var printer = Printer{ .arena = &arena, .out = std.fs.File.stdout() };
     defer printer.reset();
 
+    project = try loadBuildZon(persistentAllocator.allocator());
+
     try processArgs(persistentAllocator.allocator(), &printer);
+
+    const timestamp = std.time.milliTimestamp();
+    seed = @intCast(timestamp);
 
     try run(&persistentAllocator, &scratchAllocator, &printer);
 }
 
-pub fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
+fn loadBuildZon(allocator: std.mem.Allocator) !Project {
+    const content = try std.fs.cwd().readFileAlloc("build.zig.zon", allocator, std.Io.Limit.unlimited);
+    defer allocator.free(content);
+
+    const zeroTerminated = try allocator.dupeZ(u8, content);
+    defer allocator.free(zeroTerminated);
+
+    return try std.zon.parse.fromSliceAlloc(Project, allocator, zeroTerminated, null, .{ });
+}
+
+fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
     defer printer.reset();
@@ -56,9 +78,10 @@ pub fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
             try printer.printf(
                 \\Usage: zig-matrix   [options]
                 \\  -h, --help        Show this help message
+                \\  -v, --version     Show project's version
                 \\  -d                Enable debug mode (default: off)
                 \\  -s  <number>      Random seed (default: {d})
-                \\  -ms <number>      Frame delay in ms (default: {d})
+                \\  -ms <number>      Frame delay in ms (default: actual date in ms)
                 \\  -l <number>       Drop length (default: {d})
                 \\  -c  <color>       Rain color (default: {s})
                 \\                      (use "help" to list available colors)
@@ -67,9 +90,12 @@ pub fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
                 \\  -m  <mode>        Matrix mode (default: {s})
                 \\                      (use "help" to list available modes)
                 ,
-                .{ seed, milliseconds, dropLen,
+                .{ milliseconds, dropLen,
                    @tagName(rainColor), @tagName(asciiMode), @tagName(matrixMode) }
             );
+            std.process.exit(0);
+        } else if (std.mem.eql(u8, arg, "-v") or std.mem.eql(u8, arg, "--version")) {
+            try printer.printf("{s}: {s}\n", .{ project.name, project.version });
             std.process.exit(0);
         } else if (std.mem.eql(u8, arg, "-d")) {
             debug = true;
@@ -80,7 +106,7 @@ pub fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
             }
             
             const value = args[i + 1];
-            seed = std.fmt.parseInt(u32, value, 10) catch {
+            seed = std.fmt.parseInt(u64, value, 10) catch {
                 try printer.printf("Invalid seed value: {s}\n", .{value});
                 std.process.exit(1);
             };
@@ -189,9 +215,8 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
     var lcg = MiniLCG{ .seed = seed };
 
-    var asciiGenerator = ascii.AsciiGenerator.new(&lcg, asciiMode);
-    var scale = color.ColorScale{ .allocator = &allocator };
-    try scale.initialize(dropLen, color.rgbOf(rainColor));
+    var asciiGenerator = ascii.AsciiGenerator.init(&lcg, asciiMode);
+    var scale = try color.ColorScale.init(&allocator, dropLen, color.rgbOf(rainColor));
 
     while (!exit_requested) {
         const winsize = try console.winSize();
@@ -199,7 +224,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         // Tested on Windows CMD.
         var space: usize = 0;
         if (debug) {
-            space += 3;
+            space += 4;
         }
 
         const area = winsize.cols * winsize.rows;
@@ -207,23 +232,29 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         const cols = winsize.cols;
         const rows = winsize.rows - space;
 
-        var mtrx = matrix.Matrix{ .allocator = &allocator, .lcg = &lcg, .printer = printer, .ascii = &asciiGenerator, .scale = &scale, .mode = matrixMode };
-
-        try mtrx.initialize(cols, rows);
+        var mtrx = matrix.Matrix.init(&allocator, &lcg, &asciiGenerator, printer, &scale, matrixMode);
+        try mtrx.build(cols, rows);
 
         try printer.print(console.CLEAN_CONSOLE);
         try printer.print(console.HIDE_CURSOR);
 
+        var persistentBytes = persistentAllocator.bytes();
+        var scratchBytes =  scratchAllocator.bytes();
         while (!exit_requested) {
             try printer.print(console.RESET_CURSOR);
             if (debug) {
-                try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentAllocator.bytes(), scratchAllocator.bytes()});
+                try printer.printf("{s}: {s}\n", .{ project.name, project.version});
+                try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentBytes, scratchBytes});
                 try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any}\n", .{ milliseconds, asciiMode, rainColor, matrixMode });
                 try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ seed, rows * cols, cols, rows, dropLen });
             }
             try mtrx.print();
             try mtrx.next();
             std.Thread.sleep(milliseconds * std.time.ns_per_ms);
+
+            persistentBytes = persistentAllocator.bytes();
+            scratchBytes =  scratchAllocator.bytes();
+
             printer.reset();
 
             const newWinsize = try console.winSize();

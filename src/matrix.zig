@@ -28,11 +28,15 @@ pub const Matrix = struct {
     printer: *Printer,
     scale: *ColorScale,
 
-    matrix: ?[]Column = null,
-
     mode: Mode = Mode.Rain,
 
-    pub fn initialize(self: *Matrix, cols: usize, rows: usize) !void {
+    matrix: ?[]Column = null,
+
+    pub fn init(allocator: *std.mem.Allocator, lcg: *MiniLCG, ascii: *AsciiGenerator, printer: *Printer, scale: *ColorScale, mode: Mode) Matrix {
+        return Matrix{ .allocator = allocator, .lcg = lcg, .printer = printer, .ascii = ascii, .scale = scale, .mode = mode };
+    }
+
+    pub fn build(self: *Matrix, cols: usize, rows: usize) !void {
         self.matrix = try self.allocator.alloc(Column, cols);
 
         const matrix = self.matrix.?;
@@ -81,7 +85,7 @@ pub const Matrix = struct {
             column.cursor = column.cursor + 1;
         }
     }
-    
+
     // TODO: Refactor after checking the performance impact.
     pub fn print(self: *Matrix) !void {
         if (self.matrix == null or self.matrix.?.len == 0) {
@@ -139,7 +143,7 @@ pub const Matrix = struct {
 
                 const args = .{ color.?[0], color.?[1], color.?[2], rowRef.column[column] };
                 const formatted = try self.printer.format(console.SCALED_CHARACTER, args);
-                
+
                 try buffer.appendSlice(self.allocator.*, formatted);
             }
 
