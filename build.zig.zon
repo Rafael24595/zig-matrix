@@ -1,4 +1,14 @@
 .{
-    .name = "zig-matrix",
+    .name = .zig_matrix,
     .version = "0.0.1",
+    .fingerprint = 0xb4639a481dce360e,
+    .minimum_zig_version = "0.16.0-dev.393+dd4be26f5",
+    .dependencies = .{
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "README.md",
+    },
 }

@@ -1,22 +1,17 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const color = @import("src/color.zig");
-const console = @import("src/console.zig");
-const matrix = @import("src/matrix.zig");
+const build = @import("build.zig.zon");
 
-const AllocatorTracer = @import("src/allocator.zig").AllocatorTracer;
+const color = @import("color.zig");
+const console = @import("console.zig");
+const matrix = @import("matrix.zig");
 
-const MiniLCG = @import("src/mini_lcg.zig").MiniLCG;
-const ascii = @import("src/ascii.zig");
-const Printer = @import("src/printer.zig").Printer;
+const AllocatorTracer = @import("allocator.zig").AllocatorTracer;
 
-const Project = struct {
-    name: [] const u8,
-    version: [] const u8,
-};
-
-var project = Project{ .name = "", .version = "" };
+const MiniLCG = @import("mini_lcg.zig").MiniLCG;
+const ascii = @import("ascii.zig");
+const Printer = @import("printer.zig").Printer;
 
 var debug = false;
 
@@ -30,6 +25,8 @@ var asciiMode = ascii.Mode.Default;
 var matrixMode = matrix.Mode.Rain;
 
 pub fn main() !void {
+    try console.enableANSI();
+
     var basePersistentAllocator = std.heap.page_allocator;
     var persistentAllocator = AllocatorTracer.init(&basePersistentAllocator);
 
@@ -45,24 +42,12 @@ pub fn main() !void {
     var printer = Printer{ .arena = &arena, .out = std.fs.File.stdout() };
     defer printer.reset();
 
-    project = try loadBuildZon(persistentAllocator.allocator());
-
     try processArgs(persistentAllocator.allocator(), &printer);
 
     const timestamp = std.time.milliTimestamp();
     seed = @intCast(timestamp);
 
     try run(&persistentAllocator, &scratchAllocator, &printer);
-}
-
-fn loadBuildZon(allocator: std.mem.Allocator) !Project {
-    const content = try std.fs.cwd().readFileAlloc("build.zig.zon", allocator, std.Io.Limit.unlimited);
-    defer allocator.free(content);
-
-    const zeroTerminated = try allocator.dupeZ(u8, content);
-    defer allocator.free(zeroTerminated);
-
-    return try std.zon.parse.fromSliceAlloc(Project, allocator, zeroTerminated, null, .{ });
 }
 
 fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
@@ -95,7 +80,7 @@ fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
             );
             std.process.exit(0);
         } else if (std.mem.eql(u8, arg, "-v") or std.mem.eql(u8, arg, "--version")) {
-            try printer.printf("{s}: {s}\n", .{ project.name, project.version });
+            try printer.printf("{any}: {s}\n", .{ build.name, build.version });
             std.process.exit(0);
         } else if (std.mem.eql(u8, arg, "-d")) {
             debug = true;
@@ -243,7 +228,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         while (!exit_requested) {
             try printer.print(console.RESET_CURSOR);
             if (debug) {
-                try printer.printf("{s}: {s}\n", .{ project.name, project.version});
+                try printer.printf("{}: {s}\n", .{ build.name, build.version});
                 try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentBytes, scratchBytes});
                 try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any}\n", .{ milliseconds, asciiMode, rainColor, matrixMode });
                 try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ seed, rows * cols, cols, rows, dropLen });

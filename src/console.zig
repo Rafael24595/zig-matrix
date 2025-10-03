@@ -14,6 +14,23 @@ pub const WinSize = struct {
     rows: usize,
 };
 
+pub fn enableANSI() !void {
+    if (builtin.os.tag == .windows) {
+        const oHandle = std.os.windows.kernel32.GetStdHandle(std.os.windows.STD_OUTPUT_HANDLE);
+        if (oHandle == null) {
+            return;
+        }
+
+        const handle = oHandle.?;
+        var mode: u32 = 0;
+        if (std.os.windows.kernel32.GetConsoleMode(handle, &mode) == 0) {
+            return;
+        }
+
+        _ = std.os.windows.kernel32.SetConsoleMode(handle, mode | 0x0004);
+    }
+}
+
 pub fn winSize() !WinSize {
     return switch (builtin.os.tag) {
         .linux => linuxWinSize(),
