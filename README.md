@@ -1,7 +1,8 @@
 # Zig Matrix
 
-A terminal-based matrix digital rain effect implemented in Zig ⚡.
-It provides configurable ASCII rain with support for colors, modes, and debugging options.
+A terminal-based Matrix-style digital rain effect implemented in Zig ⚡.  
+It features configurable ASCII rain with customizable colors, movement modes, and an optional debug display.
+
 
 ---
 
@@ -15,7 +16,6 @@ It provides configurable ASCII rain with support for colors, modes, and debuggin
   - Frame delay
 - Debug mode for displaying internal states such as memory usage and seed.
 - Cross-platform signal handling for clean exit (Windows / Unix).
-- Custom allocator tracing for monitoring memory usage.
 
 ---
 
@@ -32,21 +32,31 @@ zig-out/bin/zig-matrix [options]
 
 ---
 
+## Dynamic Matrix Size
+
+The matrix adapts automatically to the size of your terminal window.  
+
+- The number of columns and rows is detected at runtime.  
+- If you resize the terminal while the program is running, the matrix will adjust to the new dimensions.  
+- This ensures the rain effect always fills the visible area of the terminal.
+
 ## Command Line Options
 
-Usage: zig-matrix   [options]
-  -h, --help        Show this help message
-  -v, --version     Show project's version
-  -d                Enable debug mode (default: off)
-  -s  <number>      Random seed (default: current timestamp in ms)
-  -ms <number>      Frame delay in ms (default: 50)
-  -l <number>       Drop length (default: 10)
-  -c  <color>       Rain color (default: Green)
-                      (use "help" to list available colors)
-  -r  <mode>        ASCII mode (default: Default)
-                      (use "help" to list available modes)
-  -m  <mode>        Matrix mode (default: Rain)
-                      (use "help" to list available modes)
+The `zig-matrix` program supports several command line options to customize the matrix rain effect.
+
+| Option | Description | Default | Values |
+|--------|-------------|---------|--------|
+| `-h`, `--help` | Show this help message | — | — |
+| `-v`, `--version` | Show project's version | — | — |
+| `-d` | Enable debug mode | Off | — |
+| `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
+| `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
+| `-l` | Drop length | 10 | Any unsigned integer |
+| `-c` | Rain color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Gold, Silver, Lime, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
+| `-r <mode>` | ASCII mode | Default | Default, Binary, Letters, Uppercase, Lowercase, Digits, Symbols, Hex, Base64, Fade |
+| `-m <mode>` | Matrix mode | Rain | Rain, Wave, Wall |
+
+---
 
 ### Examples
 #### Run with default settings:
@@ -60,14 +70,19 @@ Usage: zig-matrix   [options]
   zig-out/bin/zig-matrix -d
 ```
 
+#### Use a specific ASCII mode:
+```zig
+  zig-out/bin/zig-matrix -r Binary
+```
+
 #### Set custom rain color:
 ```zig
   zig-out/bin/zig-matrix -c NeonBlue
 ```
 
-#### Use a specific ASCII mode:
+#### Use a specific rain mode:
 ```zig
-  zig-out/bin/zig-matrix -r Binary
+  zig-out/bin/zig-matrix -m Wave
 ```
 
 ---
