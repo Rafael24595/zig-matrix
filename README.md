@@ -11,6 +11,7 @@ It features configurable ASCII rain with customizable colors, movement modes, an
 - Configurable rain effect with adjustable:
   - Drop length
   - Rain color
+  - Rain gradient
   - ASCII mode
   - Matrix mode
   - Frame delay
@@ -53,6 +54,7 @@ The `zig-matrix` program supports several command line options to customize the 
 | `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
 | `-l` | Drop length | 10 | Any unsigned integer |
 | `-c` | Rain color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Gold, Silver, Lime, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
+| `-g` | Rain gradient | Default | Default, Linear, Circular |
 | `-r` | ASCII mode | Default | Default, Binary, Letters, Uppercase, Lowercase, Digits, Symbols, Hex, Base64, Fade |
 | `-m` | Matrix mode | Rain | Rain, Wave, Wall |
 
@@ -80,6 +82,11 @@ The `zig-matrix` program supports several command line options to customize the 
   zig-out/bin/zig-matrix -c NeonBlue
 ```
 
+#### Set custom rain gradient:
+```zig
+  zig-out/bin/zig-matrix -g Circular
+```
+
 #### Use a specific rain mode:
 ```zig
   zig-out/bin/zig-matrix -m Wave
@@ -92,7 +99,7 @@ The `zig-matrix` program supports several command line options to customize the 
 When enabled (-d), the program will print additional runtime information:
 - Project name and version
 - Memory usage (persistent & scratch)
-- Execution parameters (speed, ASCII mode, rain color, matrix mode)
+- Execution parameters (speed, ASCII mode, rain color, rain gradient, matrix mode)
 - Random seed and matrix dimensions
 
 ---

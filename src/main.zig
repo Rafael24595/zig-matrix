@@ -22,6 +22,7 @@ var seed: u64 = 0;
 var milliseconds: u64 = 50;
 var dropLen: usize = 10;
 var rainColor = color.Color.Green;
+var rainMode = color.Mode.Default;
 var asciiMode = ascii.Mode.Default;
 var matrixMode = matrix.Mode.Rain;
 
@@ -71,13 +72,15 @@ fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
                 \\  -l <number>       Drop length (default: {d})
                 \\  -c  <color>       Rain color (default: {s})
                 \\                      (use "help" to list available colors)
+                \\  -g  <mode>       Rain color gradient (default: {s})
+                \\                      (use "help" to list available modes)
                 \\  -r  <mode>        ASCII mode (default: {s})
                 \\                      (use "help" to list available modes)
                 \\  -m  <mode>        Matrix mode (default: {s})
                 \\                      (use "help" to list available modes)
                 ,
                 .{ milliseconds, dropLen,
-                   @tagName(rainColor), @tagName(asciiMode), @tagName(matrixMode) }
+                   @tagName(rainColor), @tagName(rainMode), @tagName(asciiMode), @tagName(matrixMode) }
             );
             std.process.exit(0);
         } else if (std.mem.eql(u8, arg, "-v") or std.mem.eql(u8, arg, "--version")) {
@@ -129,12 +132,30 @@ fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
             const value = args[i + 1];
             if (std.mem.eql(u8, value, "help")) {
                 try printEnumOptionsWithTitle(color.Color, "Color", printer);
-                std.process.exit(1);
+                std.process.exit(0);
             }
 
             rainColor = std.meta.stringToEnum(color.Color, value) orelse {
                 try printer.printf("Invalid color: {s}\n", .{value});
                 try printEnumOptions(color.Color, printer);
+                std.process.exit(1);
+            };
+            i += 1;
+        } else if (std.mem.eql(u8, arg, "-g")) {
+            if (i + 1 >= args.len) {
+                try printer.print("Missing argument for -g (Gradient mode)\n");
+                std.process.exit(1);
+            }
+
+            const value = args[i + 1];
+            if (std.mem.eql(u8, value, "help")) {
+                try printEnumOptionsWithTitle(color.Mode, "Gradient mode", printer);
+                std.process.exit(0);
+            }
+
+            rainMode = std.meta.stringToEnum(color.Mode, value) orelse {
+                try printer.printf("Invalid gradient mode: {s}\n", .{value});
+                try printEnumOptions(color.Mode, printer);
                 std.process.exit(1);
             };
             i += 1;
@@ -147,7 +168,7 @@ fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
             const value = args[i + 1];
             if (std.mem.eql(u8, value, "help")) {
                 try printEnumOptionsWithTitle(ascii.Mode, "ASCII mode", printer);
-                std.process.exit(1);
+                std.process.exit(0);
             }
 
             asciiMode = std.meta.stringToEnum(ascii.Mode, value) orelse {
@@ -165,7 +186,7 @@ fn processArgs(allocator: std.mem.Allocator, printer: *Printer) !void {
             const value = args[i + 1];
             if (std.mem.eql(u8, value, "help")) {
                 try printEnumOptionsWithTitle(matrix.Mode, "Matrix", printer);
-                std.process.exit(1);
+                std.process.exit(0);
             }
 
             matrixMode = std.meta.stringToEnum(matrix.Mode, value) orelse {
@@ -191,7 +212,6 @@ fn printEnumOptionsWithTitle(comptime T: type, title: [:0] const u8, printer: *P
     inline for (info.@"enum".fields) |field| {
         try printer.printf(" - {s}\n", .{ field.name });
     }
-    try printer.print("\n");
 }
 
 pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTracer, printer: *Printer) !void {
@@ -202,7 +222,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
     var lcg = MiniLCG{ .seed = seed };
 
     var asciiGenerator = ascii.AsciiGenerator.init(&lcg, asciiMode);
-    var scale = try color.ColorScale.init(&allocator, dropLen, color.rgbOf(rainColor));
+    var scale = try color.ColorScale.init(&allocator, dropLen, color.rgbOf(rainColor), rainMode );
     var matrixPrinter = MatrixPrinter(console.SCALED_CHARACTER).init(&allocator, printer, &scale);
 
     while (!exit_requested) {
