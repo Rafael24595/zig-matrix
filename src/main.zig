@@ -3,15 +3,16 @@ const builtin = @import("builtin");
 
 const build = @import("build.zig.zon");
 
-const color = @import("color.zig");
-const console = @import("console.zig");
-const matrix = @import("matrix.zig");
+const AllocatorTracer = @import("commons/allocator.zig").AllocatorTracer;
+const MiniLCG = @import("commons/mini_lcg.zig").MiniLCG;
 
-const AllocatorTracer = @import("allocator.zig").AllocatorTracer;
+const console = @import("io/console.zig");
+const Printer = @import("io/printer.zig").Printer;
+const MatrixPrinter = @import("io/matrix_printer.zig").MatrixPrinter;
 
-const MiniLCG = @import("mini_lcg.zig").MiniLCG;
-const ascii = @import("ascii.zig");
-const Printer = @import("printer.zig").Printer;
+const ascii = @import("domain/ascii.zig");
+const color = @import("domain/color.zig");
+const matrix = @import("domain/matrix.zig");
 
 var debug = false;
 
@@ -202,6 +203,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
     var asciiGenerator = ascii.AsciiGenerator.init(&lcg, asciiMode);
     var scale = try color.ColorScale.init(&allocator, dropLen, color.rgbOf(rainColor));
+    var matrixPrinter = MatrixPrinter(console.SCALED_CHARACTER).init(&allocator, printer, &scale);
 
     while (!exit_requested) {
         const winsize = try console.winSize();
@@ -217,7 +219,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         const cols = winsize.cols;
         const rows = winsize.rows - space;
 
-        var mtrx = matrix.Matrix.init(&allocator, &lcg, &asciiGenerator, printer, &scale, matrixMode);
+        var mtrx = matrix.Matrix.init(&allocator, &lcg, &asciiGenerator, &scale, matrixMode);
         try mtrx.build(cols, rows);
 
         try printer.print(console.CLEAN_CONSOLE);
@@ -233,7 +235,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any}\n", .{ milliseconds, asciiMode, rainColor, matrixMode });
                 try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ seed, rows * cols, cols, rows, dropLen });
             }
-            try mtrx.print();
+            try matrixPrinter.print(&mtrx);
             try mtrx.next();
             std.Thread.sleep(milliseconds * std.time.ns_per_ms);
 

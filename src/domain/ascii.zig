@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const MiniLCG = @import("mini_lcg.zig").MiniLCG;
+const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
 
 pub const Mode = enum {
     Default,
