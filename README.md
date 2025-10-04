@@ -46,15 +46,15 @@ The `zig-matrix` program supports several command line options to customize the 
 
 | Option | Description | Default | Values |
 |--------|-------------|---------|--------|
-| `-h`, `--help` | Show this help message | — | — |
+| `-h`, `--help` | Show the help message | — | — |
 | `-v`, `--version` | Show project's version | — | — |
 | `-d` | Enable debug mode | Off | — |
 | `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
 | `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
 | `-l` | Drop length | 10 | Any unsigned integer |
 | `-c` | Rain color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Gold, Silver, Lime, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
-| `-r <mode>` | ASCII mode | Default | Default, Binary, Letters, Uppercase, Lowercase, Digits, Symbols, Hex, Base64, Fade |
-| `-m <mode>` | Matrix mode | Rain | Rain, Wave, Wall |
+| `-r` | ASCII mode | Default | Default, Binary, Letters, Uppercase, Lowercase, Digits, Symbols, Hex, Base64, Fade |
+| `-m` | Matrix mode | Rain | Rain, Wave, Wall |
 
 ---
 
@@ -107,7 +107,3 @@ When enabled (-d), the program will print additional runtime information:
   - Graceful shutdown
 
 ---
-
-## License
-
-MIT License (add your actual license if different).
