@@ -50,7 +50,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
     var asciiGenerator = ascii.AsciiGenerator.init(&lcg, config.asciiMode);
     var scale = try color.ColorScale.init(&allocator, config.dropLen, color.rgbOf(config.rainColor), config.rainMode );
-    var matrixPrinter = MatrixPrinter(console.SCALED_CHARACTER).init(&allocator, printer, &scale);
+    var matrixPrinter = MatrixPrinter(console.SCALED_CHARACTER_BYTES, console.SCALED_CHARACTER).init(&allocator, printer, &scale);
 
     while (!exit_requested) {
         const winsize = try console.winSize();

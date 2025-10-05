@@ -99,7 +99,7 @@ pub const ColorScale = struct {
         return self;
     }
 
-    pub fn find(self: *ColorScale, index: usize) ?[3]u8 {
+    pub inline fn find(self: *ColorScale, index: usize) ?[3]u8 {
         if (self.map == null) {
             return null;
         }

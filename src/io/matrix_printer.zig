@@ -19,6 +19,7 @@ const Column = struct {
 };
 
 pub fn MatrixPrinter(
+    comptime character_fmt_bytes: usize,
     comptime character_fmt: []const u8,
 ) type {
     return struct {
@@ -27,7 +28,7 @@ pub fn MatrixPrinter(
         printer: *Printer,
         scale: *ColorScale,
 
-        pub fn init(allocator: *std.mem.Allocator, printer: *Printer, scale: *ColorScale) MatrixPrinter(character_fmt) {
+        pub fn init(allocator: *std.mem.Allocator, printer: *Printer, scale: *ColorScale) MatrixPrinter(character_fmt_bytes, character_fmt) {
             return .{ .allocator = allocator, .printer = printer, .scale = scale };
         }
 
@@ -48,18 +49,17 @@ pub fn MatrixPrinter(
             var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, estimatedSize);
             defer buffer.deinit(self.allocator.*);
 
+            const iColumns: i32 = @intCast(cols);
+
             for (0..cols) |column| {
+                const iColumn: i32 = @intCast(column);
+
                 for (0..rows) |row| {
                     const rowRef = matrix[row];
 
                     const iCursor: i32 = @intCast(rowRef.cursor);
-                    const iColumn: i32 = @intCast(column);
-                    const iColumns: i32 = @intCast(cols);
 
                     var scaleIndex = iCursor - iColumn;
-
-                    const tailRange = scaleLen - iCursor;
-                    const tailStart = iColumns - tailRange;
 
                     if (rowRef.delay > 0) {
                         try buffer.append(self.allocator.*, ' ');
@@ -67,12 +67,10 @@ pub fn MatrixPrinter(
                     }
 
                     if (scaleIndex < 0) {
-                        if (rowRef.loop == 0) {
-                            try buffer.append(self.allocator.*, ' ');
-                            continue;
-                        }
+                        const tailRange = scaleLen - iCursor;
+                        const tailStart = iColumns - tailRange;
 
-                        if (column < tailStart) {
+                        if (rowRef.loop == 0 or column < tailStart) {
                             try buffer.append(self.allocator.*, ' ');
                             continue;
                         }
@@ -80,15 +78,14 @@ pub fn MatrixPrinter(
                         scaleIndex = (scaleLen + tailStart) - iColumn;
                     }
 
-                    const color = self.scale.find(@intCast(scaleIndex));
-                    if (color == null) {
+                    const color = self.scale.find(@intCast(scaleIndex)) orelse {
                         try buffer.append(self.allocator.*, ' ');
                         continue;
-                    }
+                    };
 
-                    const args = .{ color.?[0], color.?[1], color.?[2], rowRef.column[column] };
-                    const formatted = try self.printer.format(character_fmt, args);
-
+                    var temp: [character_fmt_bytes]u8 = undefined;
+                    const formatted = try std.fmt.bufPrint(&temp, character_fmt, .{ color[0], color[1], color[2], rowRef.column[column] });
+                    
                     try buffer.appendSlice(self.allocator.*, formatted);
                 }
 
