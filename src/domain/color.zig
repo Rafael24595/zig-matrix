@@ -92,7 +92,7 @@ pub const ColorScale = struct {
                 },
                 Mode.Linear => {
                     map[i] = self.scaleColorLinear(i, scale, base);
-                }
+                },
             }
         }
 
@@ -146,9 +146,9 @@ pub const ColorScale = struct {
         const b: f32 = @floatFromInt(mid[2]);
 
         return .{
-            @intFromFloat(@round(r * per)),
-            @intFromFloat(@round(g * per)),
-            @intFromFloat(@round(b * per)),
+            clamp(r * per),
+            clamp(g * per),
+            clamp(b * per),
         };
     }
 
@@ -166,9 +166,9 @@ pub const ColorScale = struct {
         const b: f32 = @floatFromInt(mid[2]);
 
         return .{
-            @intFromFloat(@round(r * per)),
-            @intFromFloat(@round(g * per)),
-            @intFromFloat(@round(b * per)),
+            clamp(r * per),
+            clamp(g * per),
+            clamp(b * per),
         };
     }
 
@@ -196,9 +196,9 @@ pub const ColorScale = struct {
         const b = lerp(@floatFromInt(mid[2]), 0.0, t);
 
         return .{
-            @intFromFloat(@round(r)),
-            @intFromFloat(@round(g)),
-            @intFromFloat(@round(b)),
+            clamp(r),
+            clamp(g),
+            clamp(b),
         };
     }
 
@@ -212,10 +212,14 @@ pub const ColorScale = struct {
         const b = lerp(255.0, @floatFromInt(mid[2]), t);
 
         return .{
-            @intFromFloat(@round(r)),
-            @intFromFloat(@round(g)),
-            @intFromFloat(@round(b)),
+            clamp(r),
+            clamp(g),
+            clamp(b),
         };
+    }
+
+    fn clamp(color: f32) u8 {
+        return @intFromFloat(@round(std.math.clamp(color, 0.0, 255.0)));
     }
 
     fn lerp(a: f32, b: f32, t: f32) f32 {
