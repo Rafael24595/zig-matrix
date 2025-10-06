@@ -35,9 +35,11 @@ pub fn MatrixPrinter(
             var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, estimatedSize);
             defer buffer.deinit(self.allocator.*);
 
-            const iColumns: i32 = @intCast(cols);
-            for (0..cols) |column| {
-                const iColumn: i32 = @intCast(column);
+            var formatBuffer: [char_fmt_bytes]u8 = undefined;
+
+            const columns: i32 = @intCast(cols);
+            for (0..cols) |col| {
+                const column: i32 = @intCast(col);
                 for (0..rows) |row| {
                     const rowRef = matrix[row];
                     if (rowRef.delay > 0) {
@@ -45,19 +47,19 @@ pub fn MatrixPrinter(
                         continue;
                     }
 
-                    const iCursor: i32 = @intCast(rowRef.cursor);
+                    const cursor: i32 = @intCast(rowRef.cursor);
 
-                    var scaleIndex = iCursor - iColumn;
+                    var scaleIndex = cursor - column;
                     if (scaleIndex < 0) {
-                        const tailRange = scaleLen - iCursor;
-                        const tailStart = iColumns - tailRange;
+                        const tailRange = scaleLen - cursor;
+                        const tailStart = columns - tailRange;
 
-                        if (rowRef.loop == 0 or iColumn < tailStart) {
+                        if (rowRef.loop == 0 or column < tailStart) {
                             try buffer.append(self.allocator.*, ' ');
                             continue;
                         }
 
-                        scaleIndex = (scaleLen + tailStart) - iColumn;
+                        scaleIndex = (scaleLen + tailStart) - column;
                     }
 
                     const color = self.scale.find(@intCast(scaleIndex)) orelse {
@@ -65,13 +67,11 @@ pub fn MatrixPrinter(
                         continue;
                     };
 
-                    var temp: [char_fmt_bytes]u8 = undefined;
-                    const formatted = try std.fmt.bufPrint(&temp, char_fmt, .{ color[0], color[1], color[2], rowRef.column[column] });
-                    
+                    const formatted = try std.fmt.bufPrint(&formatBuffer, char_fmt, .{ color[0], color[1], color[2], rowRef.column[col] });
                     try buffer.appendSlice(self.allocator.*, formatted);
                 }
 
-                if (column < cols - 1) {
+                if (column < columns - 1) {
                     try buffer.append(self.allocator.*, '\n');
                 }
             }

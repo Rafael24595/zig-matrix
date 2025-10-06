@@ -65,6 +65,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
         const cols = winsize.cols;
         const rows = winsize.rows - space;
+        const fixedArea = rows * cols;
 
         var mtrx = matrix.Matrix.init(&allocator, &lcg, &asciiGenerator, &scale, config.matrixMode);
         try mtrx.build(cols, rows);
@@ -80,7 +81,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 try printer.printf("{}: {s}\n", .{ build.name, build.version});
                 try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentBytes, scratchBytes});
                 try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any}\n", .{ config.milliseconds, config.asciiMode, config.rainColor, config.matrixMode });
-                try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ config.seed, rows * cols, cols, rows, config.dropLen });
+                try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ config.seed, fixedArea, cols, rows, config.dropLen });
             }
             try matrixPrinter.print(&mtrx);
             try mtrx.next();
