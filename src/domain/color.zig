@@ -14,9 +14,6 @@ pub const Color = enum {
     Gray,
     Pink,
     Brown,
-    Gold,
-    Silver,
-    Lime,
     Aqua,
     Navy,
     Teal,
@@ -44,9 +41,6 @@ const color_values = [_][3]u8{
     .{ 128, 128, 128 }, // Gray
     .{ 255, 192, 203 }, // Pink
     .{ 165, 42, 42 }, // Brown
-    .{ 255, 215, 0 }, // Gold
-    .{ 192, 192, 192 }, // Silver
-    .{ 50, 205, 50 }, // Lime
     .{ 127, 255, 212 }, // Aqua
     .{ 0, 0, 128 }, // Navy
     .{ 0, 128, 128 }, // Teal
