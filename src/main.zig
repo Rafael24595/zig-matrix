@@ -121,7 +121,13 @@ pub fn defineSignalHandlers() !void {
         return;
     }
 
-    _ = std.os.signal(std.os.SIGINT, unixSigintHandler);
+    const action = std.posix.Sigaction{
+        .handler = .{ .handler = unixSigintHandler },
+        .mask = undefined,
+        .flags = 0,
+    };
+
+    _ = std.posix.sigaction(std.posix.SIG.INT, &action, null);
 }
 
 fn winCtrlHandler(ctrl_type: std.os.windows.DWORD) callconv(.c) std.os.windows.BOOL {
@@ -130,8 +136,7 @@ fn winCtrlHandler(ctrl_type: std.os.windows.DWORD) callconv(.c) std.os.windows.B
     return 1;
 }
 
-fn unixSigintHandler(signum: c_int) c_int {
-    _ = signum;
+fn unixSigintHandler(sig_num: i32) callconv(.c) void {
+    _ = sig_num;
     exit_requested = true;
-    return 0;
 }
