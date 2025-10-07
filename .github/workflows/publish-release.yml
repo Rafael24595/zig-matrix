@@ -49,6 +49,7 @@ jobs:
       - name: Build Linux binary
         run: |
           VERSION=${{ needs.validate-version.outputs.version }}
+          rm -rf zig-out
           zig build -Dtarget=x86_64-linux-gnu -Doptimize=ReleaseFast
           mkdir -p release-linux-$VERSION
           cp zig-out/bin/* release-linux-$VERSION/
@@ -57,6 +58,7 @@ jobs:
       - name: Build Windows binary
         run: |
           VERSION=${{ needs.validate-version.outputs.version }}
+          rm -rf zig-out
           zig build -Dtarget=x86_64-windows-gnu -Doptimize=ReleaseFast
           mkdir -p release-windows-$VERSION
           cp zig-out/bin/* release-windows-$VERSION/
