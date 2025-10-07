@@ -98,6 +98,10 @@ pub const ColorScale = struct {
             return null;
         }
 
+        return self.findUnsafe(index);
+    }
+
+    pub inline fn findUnsafe(self: *ColorScale, index: usize) ?[3]u8 {
         if (index >= self.map.?.len) {
             return null;
         }
