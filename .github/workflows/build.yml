@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Instalar Zig
+      - name: Set up Zig
         uses: mlugg/setup-zig@v2
         with:
           version: 0.15.1
