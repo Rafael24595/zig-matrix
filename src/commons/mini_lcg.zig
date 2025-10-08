@@ -1,6 +1,10 @@
 pub const MiniLCG = struct {
     seed: u64 = 1,
 
+    pub fn init(seed: u64) MiniLCG {
+        return MiniLCG{ .seed = seed };
+    }
+
     fn next(self: *MiniLCG) u64 {
         const mul = @mulWithOverflow(self.seed, 1664525);
         const add = @addWithOverflow(mul[0], 1013904223);

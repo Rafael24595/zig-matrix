@@ -46,7 +46,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
     var allocator = persistentAllocator.allocator();
 
-    var lcg = MiniLCG{ .seed = config.seed };
+    var lcg = MiniLCG.init(config.seed);
 
     var asciiGenerator = ascii.AsciiGenerator.init(&lcg, config.asciiMode);
     var scale = try color.ColorScale.init(&allocator, config.dropLen, color.rgbOf(config.rainColor), config.rainMode );
