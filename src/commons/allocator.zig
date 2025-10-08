@@ -23,10 +23,6 @@ pub const AllocatorTracer = struct {
         };
     }
 
-    pub fn reset(self: *AllocatorTracer) void {
-        self.bytes_in_use = 0;
-    }
-
     pub fn alloc(self: *AllocatorTracer, len: usize, alignment: std.mem.Alignment, ret_addr: usize) ?[*]u8 {
         const result = self.base.rawAlloc(len, alignment, ret_addr);
         if (result != null) {
