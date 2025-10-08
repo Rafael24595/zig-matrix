@@ -41,7 +41,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Instalar Zig
+      - name: Set up Zig
         uses: mlugg/setup-zig@v2
         with:
           version: 0.15.1
@@ -64,7 +64,7 @@ jobs:
           cp zig-out/bin/* release-windows-$VERSION/
           zip -r release-windows-$VERSION.zip release-windows-$VERSION
 
-      - name: Crear y push del tag
+      - name: Push Git Tag
         run: |
           VERSION=${{ needs.validate-version.outputs.version }}
           git config user.name "github-actions"
@@ -73,7 +73,7 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push origin $VERSION
 
-      - name: Publicar release en GitHub
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.validate-version.outputs.version }}
