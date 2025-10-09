@@ -50,7 +50,7 @@ pub fn MatrixPrinter(
                         continue;
                     }
 
-                    const color = self.scale.findUnsafe(@intCast(scaleIndex)) orelse {
+                    const color = self.scale.findUnsafe(scaleIndex) orelse {
                         try buffer.append(self.allocator.*, ' ');
                         continue;
                     };
