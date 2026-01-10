@@ -32,8 +32,8 @@ pub const Configuration = struct {
                     \\  -h, --help        Show this help message
                     \\  -v, --version     Show project's version
                     \\  -d                Enable debug mode (default: off)
-                    \\  -s  <number>      Random seed (default: {d})
-                    \\  -ms <number>      Frame delay in ms (default: actual date in ms)
+                    \\  -s  <number>      Random seed (default: actual date in ms)
+                    \\  -ms <number>      Frame delay in ms (default: {d})
                     \\  -l  <number>      Drop length (default: {d})
                     \\  -c  <color>       Rain color (default: {s})
                     \\                      (use "help" to list available colors)
@@ -105,7 +105,7 @@ pub const Configuration = struct {
                 i += 1;
             } else if (std.mem.eql(u8, arg, "-g")) {
                 if (i + 1 >= args.len) {
-                    try printer.print("Missing argument for -g (Gradient mode)\n");
+                    try printer.print("Missing argument for -g (gradient mode)\n");
                     std.process.exit(1);
                 }
 
