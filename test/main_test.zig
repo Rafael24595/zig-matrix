@@ -3,4 +3,5 @@ test {
     _ = @import("commons/mini_lcg_test.zig");
     _ = @import("domain/ascii_test.zig");
     _ = @import("domain/color_test.zig");
+    _ = @import("io/formatter_test.zig");
 }

@@ -6,6 +6,7 @@ const ascii = @import("../domain/ascii.zig");
 const color = @import("../domain/color.zig");
 const matrix = @import("../domain/matrix.zig");
 const Printer = @import("../io/printer.zig").Printer;
+const formatter = @import("../io/formatter.zig");
 
 pub const Configuration = struct {
     debug: bool = false,
@@ -16,6 +17,7 @@ pub const Configuration = struct {
     rainMode: color.Mode = .Default,
     asciiMode: ascii.Mode = .Default,
     matrixMode: matrix.Mode = .Rain,
+    formatter: formatter.FormatterUnion = formatter.FormatterUnion{ .rgb = .{} },
 
     pub fn init(args: [][:0]u8, printer: *Printer) !Configuration {
         defer printer.reset();
@@ -43,7 +45,9 @@ pub const Configuration = struct {
                     \\                      (use "help" to list available modes)
                     \\  -m  <mode>        Matrix mode (default: {s})
                     \\                      (use "help" to list available modes)
-                , .{ config.milliseconds, config.dropLen, @tagName(config.rainColor), @tagName(config.rainMode), @tagName(config.asciiMode), @tagName(config.matrixMode) });
+                    \\  -cm <mode>        Color mode (default: {s})
+                    \\                      (use "help" to list available modes)
+                , .{ config.milliseconds, config.dropLen, @tagName(config.rainColor), @tagName(config.rainMode), @tagName(config.asciiMode), @tagName(config.matrixMode), @tagName(config.formatter.code()) });
                 std.process.exit(0);
             } else if (std.mem.eql(u8, arg, "-v") or std.mem.eql(u8, arg, "--version")) {
                 try printer.printf("{any}: {s}\n", .{ build.name, build.version });
@@ -156,6 +160,27 @@ pub const Configuration = struct {
                     try config.printEnumOptions(matrix.Mode, printer);
                     std.process.exit(1);
                 };
+                i += 1;
+            } else if (std.mem.eql(u8, arg, "-cm")) {
+                if (i + 1 >= args.len) {
+                    try printer.printf("Missing argument for -cm (color mode)\n", .{});
+                    std.process.exit(1);
+                }
+
+                const value = args[i + 1];
+                if (std.mem.eql(u8, value, "help")) {
+                    try config.printEnumOptionsWithTitle(formatter.FormatterCode, "Color mode", printer);
+                    std.process.exit(0);
+                }
+
+                const code = std.meta.stringToEnum(formatter.FormatterCode, value) orelse {
+                    try printer.printf("Invalid color mode: {s}\n", .{value});
+                    try config.printEnumOptions(formatter.FormatterCode, printer);
+                    std.process.exit(1);
+                };
+
+                config.formatter = formatter.unionOf(code);
+
                 i += 1;
             } else {
                 try printer.printf("Unknown argument: {s}\n", .{arg});
