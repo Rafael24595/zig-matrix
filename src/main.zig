@@ -26,7 +26,7 @@ pub fn main() !void {
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    
+
     var baseScratchAllocator = gpa.allocator();
     var scratchAllocator = AllocatorTracer.init(&baseScratchAllocator);
 
@@ -49,8 +49,8 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
     var lcg = MiniLCG.init(config.seed);
 
     var asciiGenerator = ascii.AsciiGenerator.init(&lcg, config.asciiMode);
-    var scale = try color.ColorScale.init(&allocator, config.dropLen, color.rgbOf(config.rainColor), config.rainMode );
-    var matrixPrinter = MatrixPrinter(console.SCALED_CHARACTER_BYTES, console.SCALED_CHARACTER).init(&allocator, printer, &scale);
+    var scale = try color.ColorScale.init(&allocator, config.dropLen, color.rgbOf(config.rainColor), config.rainMode);
+    var matrixPrinter = MatrixPrinter.init(&allocator, printer, config.formatter, &scale);
 
     while (!exit_requested) {
         const winsize = try console.winSize();
@@ -74,13 +74,13 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         try printer.print(console.HIDE_CURSOR);
 
         var persistentBytes = persistentAllocator.bytes();
-        var scratchBytes =  scratchAllocator.bytes();
+        var scratchBytes = scratchAllocator.bytes();
         while (!exit_requested) {
             try printer.print(console.RESET_CURSOR);
             if (config.debug) {
-                try printer.printf("{}: {s}\n", .{ build.name, build.version});
-                try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentBytes, scratchBytes});
-                try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any}\n", .{ config.milliseconds, config.asciiMode, config.rainColor, config.matrixMode });
+                try printer.printf("{}: {s}\n", .{ build.name, build.version });
+                try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentBytes, scratchBytes });
+                try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any} | Formatter mode: {any}\n", .{ config.milliseconds, config.asciiMode, config.rainColor, config.matrixMode, config.formatter.code() });
                 try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ config.seed, fixedArea, cols, rows, config.dropLen });
             }
             try matrixPrinter.print(&mtrx);
@@ -88,7 +88,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
             std.Thread.sleep(config.milliseconds * std.time.ns_per_ms);
 
             persistentBytes = persistentAllocator.bytes();
-            scratchBytes =  scratchAllocator.bytes();
+            scratchBytes = scratchAllocator.bytes();
 
             printer.reset();
 

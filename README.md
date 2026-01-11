@@ -23,13 +23,17 @@ It features configurable ASCII rain with customizable colors, movement modes, an
 ## Build & Run
 
 ### Requirements
-- Zig compiler (Tested on 0.16.0-dev.393+dd4be26f5)
+- Zig compiler (Tested on 0.15.1)
 
 ### Build
-zig build
+```sh
+  zig build
+```
 
 ### Run
-zig-out/bin/zig-matrix [options]
+```sh
+  zig-out/bin/zig-matrix [options]
+```
 
 ---
 
@@ -57,38 +61,39 @@ The `zig-matrix` program supports several command line options to customize the 
 | `-g` | Rain gradient | Default | Default, Linear, Circular |
 | `-r` | ASCII mode | Default | Default, Binary, Letters, Uppercase, Lowercase, Digits, Symbols, Hex, Base64, Fade |
 | `-m` | Matrix mode | Rain | Rain, Wave, Wall |
+| `-cm` | Color mode | RGB | RGB, ANSI, VOID |
 
 ---
 
 ### Examples
 #### Run with default settings:
 
-```zig
+```sh
   zig-out/bin/zig-matrix
 ```
 
 #### Run in debug mode:
-```zig
+```sh
   zig-out/bin/zig-matrix -d
 ```
 
 #### Use a specific ASCII mode:
-```zig
+```sh
   zig-out/bin/zig-matrix -r Binary
 ```
 
 #### Set custom rain color:
-```zig
+```sh
   zig-out/bin/zig-matrix -c NeonBlue
 ```
 
 #### Set custom rain gradient:
-```zig
+```sh
   zig-out/bin/zig-matrix -g Circular
 ```
 
 #### Use a specific rain mode:
-```zig
+```sh
   zig-out/bin/zig-matrix -m Wave
 ```
 
