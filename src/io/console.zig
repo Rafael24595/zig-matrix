@@ -29,6 +29,12 @@ pub fn enableANSI() !void {
     }
 }
 
+pub fn enableUTF8() !void {
+    if (builtin.os.tag == .windows) {
+        _ = std.os.windows.kernel32.SetConsoleOutputCP(65001);
+    }
+}
+
 pub fn winSize() !WinSize {
     return switch (builtin.os.tag) {
         .linux => linuxWinSize(),

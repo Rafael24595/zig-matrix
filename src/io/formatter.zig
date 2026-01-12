@@ -20,7 +20,7 @@ pub const FormatterUnion = union(enum) {
     void: VoidFormatter,
 
     pub fn code(
-        self: FormatterUnion,
+        self: @This(),
     ) FormatterCode {
         return switch (self) {
             .ansi => |f| f.code(),
@@ -30,7 +30,7 @@ pub const FormatterUnion = union(enum) {
     }
 
     pub fn fmt_bytes(
-        self: *FormatterUnion,
+        self: *@This(),
     ) usize {
         return switch (self.*) {
             .ansi => |f| f.fmt_bytes(),
@@ -40,7 +40,7 @@ pub const FormatterUnion = union(enum) {
     }
 
     pub fn prefix(
-        self: *FormatterUnion,
+        self: *@This(),
     ) []const u8 {
         return switch (self.*) {
             .ansi => |f| f.prefix(),
@@ -50,7 +50,7 @@ pub const FormatterUnion = union(enum) {
     }
 
     pub fn sufix(
-        self: *FormatterUnion,
+        self: *@This(),
     ) []const u8 {
         return switch (self.*) {
             .ansi => |f| f.sufix(),
@@ -60,12 +60,12 @@ pub const FormatterUnion = union(enum) {
     }
 
     pub fn format(
-        self: FormatterUnion,
+        self: @This(),
         buffer: []u8,
         r: u8,
         g: u8,
         b: u8,
-        c: u8,
+        c: []const u8,
     ) ![]const u8 {
         return switch (self) {
             .ansi => |f| f.format(buffer, r, g, b, c),
@@ -82,7 +82,7 @@ fn Formatter(
     comptime prefix_fmt: []const u8,
     comptime sufix_fmt: []const u8,
     comptime char_fmt: []const u8,
-    comptime adapter: fn (r: u8, g: u8, b: u8, c: u8) AdapterReturn,
+    comptime adapter: fn (r: u8, g: u8, b: u8, c: []const u8) AdapterReturn,
 ) type {
     return struct {
         pub fn code(_: @This()) FormatterCode {
@@ -107,7 +107,7 @@ fn Formatter(
             r: u8,
             g: u8,
             b: u8,
-            c: u8,
+            c: []const u8,
         ) ![]const u8 {
             return try std.fmt.bufPrint(
                 buffer,
@@ -120,25 +120,25 @@ fn Formatter(
 
 pub const AnsiFormatter = Formatter(
     FormatterCode.ANSI,
-    struct { u8, u8 },
+    struct { u8, []const u8 },
     24,
     "",
     "\x1b[0m",
-    "\x1b[38;5;{d}m{c}",
+    "\x1b[38;5;{d}m{s}",
     rgbToAnsi256,
 );
 
-fn rgbToAnsi256(r: u8, g: u8, b: u8, c: u8) struct { u8, u8 } {
+fn rgbToAnsi256(r: u8, g: u8, b: u8, c: []const u8) struct { u8, []const u8 } {
     if (r == g and g == b) {
         if (r < 8) {
-            return .{ 6, c };
+            return .{ 16, c };
         }
-
         if (r > 248) {
             return .{ 231, c };
         }
 
-        return .{ 232 + ((r - 8) / 10), c };
+        const gray_index: u8 = @intCast(((r - 8) * 24) / 247);
+        return .{ 232 + gray_index, c };
     }
 
     const rr = (@as(u16, r) * 5) / 255;
@@ -150,28 +150,28 @@ fn rgbToAnsi256(r: u8, g: u8, b: u8, c: u8) struct { u8, u8 } {
 
 pub const RgbFormatter = Formatter(
     FormatterCode.RGB,
-    struct { u8, u8, u8, u8 },
+    struct { u8, u8, u8, []const u8 },
     32,
     "",
     "\x1b[0m",
-    "\x1b[38;2;{d};{d};{d}m{c}",
+    "\x1b[38;2;{d};{d};{d}m{s}",
     rgbVoid,
 );
 
-fn rgbVoid(r: u8, g: u8, b: u8, c: u8) struct { u8, u8, u8, u8 } {
+fn rgbVoid(r: u8, g: u8, b: u8, c: []const u8) struct { u8, u8, u8, []const u8 } {
     return .{ r, g, b, c };
 }
 
 pub const VoidFormatter = Formatter(
     FormatterCode.VOID,
-    struct { u8 },
+    struct { []const u8 },
     1,
     "",
     "\x1b[0m",
-    "{c}",
+    "{s}",
     unformatted,
 );
 
-fn unformatted(_: u8, _: u8, _: u8, c: u8) struct { u8 } {
+fn unformatted(_: u8, _: u8, _: u8, c: []const u8) struct { []const u8 } {
     return .{c};
 }

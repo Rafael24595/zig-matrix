@@ -13,7 +13,7 @@ pub const MatrixPrinter = struct {
     scale: *ColorScale,
     formatter: Formatter,
 
-    pub fn init(allocator: *std.mem.Allocator, printer: *Printer, formatter: Formatter, scale: *ColorScale) MatrixPrinter {
+    pub fn init(allocator: *std.mem.Allocator, printer: *Printer, formatter: Formatter, scale: *ColorScale) @This() {
         return .{ .allocator = allocator, .printer = printer, .scale = scale, .formatter = formatter };
     }
 
@@ -30,7 +30,10 @@ pub const MatrixPrinter = struct {
         const prefix = self.formatter.prefix();
         const sufix = self.formatter.sufix();
 
-        const estimatedSize = prefix.len + (rows * columns * self.formatter.fmt_bytes()) + sufix.len;
+        const char_fmt_len = self.formatter.fmt_bytes() + mtrx.max_char_bytes();
+        const mtrx_fmt_len = rows * columns * char_fmt_len;
+        const estimatedSize = prefix.len + mtrx_fmt_len + sufix.len;
+
         var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, estimatedSize);
         defer buffer.deinit(self.allocator.*);
 
