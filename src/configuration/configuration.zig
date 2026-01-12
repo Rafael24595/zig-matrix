@@ -11,7 +11,7 @@ const formatter = @import("../io/formatter.zig");
 pub const Configuration = struct {
     debug: bool = false,
     seed: u64 = 0,
-    milliseconds: u64 = 50,
+    milliseconds: u64 = 85,
     dropLen: usize = 10,
     rainColor: color.Color = .Green,
     rainMode: color.Mode = .Default,
@@ -19,7 +19,7 @@ pub const Configuration = struct {
     matrixMode: matrix.Mode = .Rain,
     formatter: formatter.FormatterUnion = formatter.FormatterUnion{ .rgb = .{} },
 
-    pub fn init(args: [][:0]u8, printer: *Printer) !Configuration {
+    pub fn init(args: [][:0]u8, printer: *Printer) !@This() {
         defer printer.reset();
 
         var config = Configuration{};
@@ -194,11 +194,11 @@ pub const Configuration = struct {
         return config;
     }
 
-    fn printEnumOptions(self: *Configuration, comptime T: type, printer: *Printer) !void {
+    fn printEnumOptions(self: *@This(), comptime T: type, printer: *Printer) !void {
         try self.printEnumOptionsWithTitle(T, "Available", printer);
     }
 
-    fn printEnumOptionsWithTitle(_: *Configuration, comptime T: type, title: [:0]const u8, printer: *Printer) !void {
+    fn printEnumOptionsWithTitle(_: *@This(), comptime T: type, title: [:0]const u8, printer: *Printer) !void {
         const info = @typeInfo(T);
         try printer.printf("{s} options:\n", .{title});
         inline for (info.@"enum".fields) |field| {
