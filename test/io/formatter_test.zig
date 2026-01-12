@@ -10,7 +10,7 @@ test "Formatter with u8 adapter (ANSI 256)" {
     const buf = try allocator.alloc(u8, f.fmt_bytes());
     defer allocator.free(buf);
 
-    const out = try f.format(buf, 255, 0, 0, 'X');
+    const out = try f.format(buf, 255, 0, 0, "X");
 
     try std.testing.expectEqualStrings(
         "\x1b[38;5;196mX",
@@ -26,7 +26,7 @@ test "Formatter with Rgb adapter (RGB)" {
     const buf = try allocator.alloc(u8, f.fmt_bytes());
     defer allocator.free(buf);
 
-    const out = try f.format(buf, 255, 0, 144, 'X');
+    const out = try f.format(buf, 255, 0, 144, "X");
 
     try std.testing.expectEqualStrings(
         "\x1b[38;2;255;0;144mX",
@@ -41,7 +41,7 @@ test "FormatterUnion with ANSI and RGB adapter" {
 
     var buf = try allocator.alloc(u8, f.fmt_bytes());
 
-    var out = try f.format(buf, 255, 0, 144, 'X');
+    var out = try f.format(buf, 255, 0, 144, "X");
     try std.testing.expectEqualStrings(
         "\x1b[38;2;255;0;144mX",
         out,
@@ -52,7 +52,7 @@ test "FormatterUnion with ANSI and RGB adapter" {
     buf = try allocator.alloc(u8, f.fmt_bytes());
 
     f = formatter.FormatterUnion{ .ansi = .{} };
-    out = try f.format(buf, 255, 0, 0, 'X');
+    out = try f.format(buf, 255, 0, 0, "X");
     try std.testing.expectEqualStrings(
         "\x1b[38;5;196mX",
         out,
