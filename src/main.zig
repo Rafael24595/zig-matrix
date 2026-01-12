@@ -75,6 +75,9 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
         var persistentBytes = persistentAllocator.bytes();
         var scratchBytes = scratchAllocator.bytes();
+
+        try printer.print("\x1b[?1049h");
+
         while (!exit_requested) {
             try printer.print(console.RESET_CURSOR);
             if (config.debug) {
@@ -83,7 +86,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any} | Formatter mode: {any}\n", .{ config.milliseconds, config.asciiMode, config.rainColor, config.matrixMode, config.formatter.code() });
                 try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ config.seed, fixedArea, cols, rows, config.dropLen });
             }
-            try matrixPrinter.print(&mtrx);
+            try matrixPrinter.print(space, &mtrx);
             try mtrx.next();
             std.Thread.sleep(config.milliseconds * std.time.ns_per_ms);
 
@@ -97,6 +100,8 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 break;
             }
         }
+
+        try printer.print("\x1b[?1049l");
 
         try printer.print(console.CLEAN_CONSOLE);
 

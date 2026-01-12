@@ -18,7 +18,7 @@ pub const MatrixPrinter = struct {
     }
 
     // TODO: Refactor after checking the performance impact.
-    pub fn print(self: *@This(), mtrx: *Matrix) !void {
+    pub fn print(self: *@This(), space: usize, mtrx: *Matrix) !void {
         if (mtrx.matrix == null or mtrx.matrix.?.len == 0) {
             return;
         }
@@ -41,32 +41,48 @@ pub const MatrixPrinter = struct {
             try buffer.appendSlice(self.allocator.*, prefix);
         }
 
+        const tail = self.scale.map.?.len;
+
         for (0..columns) |column| {
+            var last_cursor: bool = false;
             for (0..rows) |row| {
                 const rowRef = matrix[row];
                 if (rowRef.delay > 0) {
-                    try buffer.append(self.allocator.*, ' ');
+                    last_cursor = false;
                     continue;
                 }
 
                 const cursor = rowRef.cursor;
-                const scaleIndex = (columns + cursor - column) % columns;
                 if (rowRef.loop == 0 and cursor < column) {
+                    last_cursor = false;
+                    continue;
+                }
+
+                const scaleIndex = (columns + cursor - column) % columns;
+                if (scaleIndex == tail) {
+                    if (!last_cursor) {
+                        const tcursor = try std.fmt.bufPrint(buf, "\x1b[{d};{d}H", .{ column + space + 1, row });
+                        try buffer.appendSlice(self.allocator.*, tcursor);
+                        last_cursor = true;
+                    }
+
                     try buffer.append(self.allocator.*, ' ');
                     continue;
                 }
 
                 const color = self.scale.findUnsafe(scaleIndex) orelse {
-                    try buffer.append(self.allocator.*, ' ');
+                    last_cursor = false;
                     continue;
                 };
 
+                if (!last_cursor) {
+                    const tcursor = try std.fmt.bufPrint(buf, "\x1b[{d};{d}H", .{ column + space + 1, row });
+                    try buffer.appendSlice(self.allocator.*, tcursor);
+                    last_cursor = true;
+                }
+
                 const formatted = try self.formatter.format(buf, color[0], color[1], color[2], rowRef.column[column]);
                 try buffer.appendSlice(self.allocator.*, formatted);
-            }
-
-            if (column < columns - 1) {
-                try buffer.append(self.allocator.*, '\n');
             }
         }
 
