@@ -70,7 +70,7 @@ pub const ColorScale = struct {
 
     mode: Mode = Mode.Default,
 
-    pub fn init(allocator: *std.mem.Allocator, scale: usize, base: [3]u8, mode: Mode) !ColorScale {
+    pub fn init(allocator: *std.mem.Allocator, scale: usize, base: [3]u8, mode: Mode) !@This() {
         var self = ColorScale{ .allocator = allocator, .mode = mode };
 
         self.map = try self.allocator.alloc([3]u8, scale + 1);
@@ -93,7 +93,7 @@ pub const ColorScale = struct {
         return self;
     }
 
-    pub inline fn find(self: *ColorScale, index: usize) ?[3]u8 {
+    pub inline fn find(self: *@This(), index: usize) ?[3]u8 {
         if (self.map == null) {
             return null;
         }
@@ -101,7 +101,7 @@ pub const ColorScale = struct {
         return self.findUnsafe(index);
     }
 
-    pub inline fn findUnsafe(self: *ColorScale, index: usize) ?[3]u8 {
+    pub inline fn findUnsafe(self: *@This(), index: usize) ?[3]u8 {
         if (index >= self.map.?.len) {
             return null;
         }
@@ -109,7 +109,7 @@ pub const ColorScale = struct {
         return self.map.?[index];
     }
 
-    pub fn len(self: *ColorScale) usize {
+    pub fn len(self: *@This()) usize {
         if (self.map == null) {
             return 0;
         }
@@ -117,14 +117,14 @@ pub const ColorScale = struct {
         return self.map.?.len;
     }
 
-    pub fn free(self: *ColorScale) void {
+    pub fn free(self: *@This()) void {
         if (self.map) |m| {
             self.allocator.free(m);
             self.map = null;
         }
     }
 
-    fn scaleColorCircular(_: *ColorScale, index: usize, max: usize, mid: [3]u8) [3]u8 {
+    fn scaleColorCircular(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -150,7 +150,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn scaleColorLinear(_: *ColorScale, index: usize, max: usize, mid: [3]u8) [3]u8 {
+    fn scaleColorLinear(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -170,7 +170,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn scaleColorDefault(self: *ColorScale, index: usize, max: usize, mid: [3]u8) [3]u8 {
+    fn scaleColorDefault(self: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -184,7 +184,7 @@ pub const ColorScale = struct {
         return self.lowerColor(index - half, max - half, mid);
     }
 
-    fn lowerColor(_: *ColorScale, index: usize, max: usize, mid: [3]u8) [3]u8 {
+    fn lowerColor(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
         const fi: f32 = @floatFromInt(index);
         const fh: f32 = @floatFromInt(max);
         const t = fi / fh;
@@ -200,7 +200,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn upperColor(_: *ColorScale, index: usize, half: usize, mid: [3]u8) [3]u8 {
+    fn upperColor(_: *@This(), index: usize, half: usize, mid: [3]u8) [3]u8 {
         const fi: f32 = @floatFromInt(index);
         const fh: f32 = @floatFromInt(half);
         const t = fi / fh;

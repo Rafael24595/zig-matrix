@@ -4,7 +4,7 @@ pub const AllocatorTracer = struct {
     base: *std.mem.Allocator,
     bytes_in_use: usize,
 
-    pub fn init(base: *std.mem.Allocator) AllocatorTracer {
+    pub fn init(base: *std.mem.Allocator) @This() {
         return AllocatorTracer{
             .base = base,
             .bytes_in_use = 0,
