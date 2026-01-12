@@ -3,6 +3,9 @@
 A terminal-based Matrix-style digital rain effect implemented in Zig ⚡.  
 It features configurable ASCII rain with customizable colors, movement modes, and an optional debug display.
 
+```Text
+Warning: This program has been tested on modern terminals (Terminal Windows 1.23.13503.0). Older terminals may exhibit slow rendering or display issues when using RGB color mode. For better performance, consider using ANSI mode, or VOID mode for maximum speed.
+```
 
 ---
 
@@ -59,7 +62,7 @@ The `zig-matrix` program supports several command line options to customize the 
 | `-l` | Drop length | 10 | Any unsigned integer |
 | `-c` | Rain color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
 | `-g` | Rain gradient | Default | Default, Linear, Circular |
-| `-r` | ASCII mode | Default | Default, Binary, Letters, Uppercase, Lowercase, Digits, Symbols, Hex, Base64, Fade |
+| `-r` | ASCII mode | Default | Default, Binary, Latin, LatinUpper, LatinLower, Digits, Symbols, Hex, Base64, Blocks, Extended, Katana, Fade, Matrix, Code, SciFi, Runes, Math, Arcane, Telemetry, Cyrilic, CyrilicUpper, CyrilicLower, Greek, GreekUpper, GreekLower, Arabic, Devanagari, |
 | `-m` | Matrix mode | Rain | Rain, Wave, Wall |
 | `-cm` | Color mode | RGB | RGB, ANSI, VOID |
 
