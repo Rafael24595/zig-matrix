@@ -137,7 +137,9 @@ fn rgbToAnsi256(r: u8, g: u8, b: u8, c: []const u8) struct { u8, []const u8 } {
             return .{ 231, c };
         }
 
-        const gray_index: u8 = @intCast(((r - 8) * 24) / 247);
+        const scaled_gray_offset = (@as(u16, r) - 8) * 24;
+        const gray_index: u8 = @intCast(scaled_gray_offset / 247);
+
         return .{ 232 + gray_index, c };
     }
 
