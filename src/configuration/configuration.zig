@@ -34,7 +34,7 @@ pub const Configuration = struct {
                     \\  -h, --help        Show this help message
                     \\  -v, --version     Show project's version
                     \\  -d                Enable debug mode (default: off)
-                    \\  -s  <number>      Random seed (default: actual date in ms)
+                    \\  -s  <number>      Random seed (default: current time in ms)
                     \\  -ms <number>      Frame delay in ms (default: {d})
                     \\  -l  <number>      Drop length (default: {d})
                     \\  -c  <color>       Rain color (default: {s})
@@ -189,7 +189,10 @@ pub const Configuration = struct {
         }
 
         const timestamp = std.time.milliTimestamp();
-        config.seed = @intCast(timestamp);
+
+        if (config.seed == 0) {
+            config.seed = @intCast(timestamp);
+        }
 
         return config;
     }
