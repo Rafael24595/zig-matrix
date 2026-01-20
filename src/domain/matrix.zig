@@ -2,7 +2,7 @@ const std = @import("std");
 
 const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
 
-const AsciiGenerator = @import("ascii.zig").AsciiGenerator;
+const AsciiGenerator = @import("symbol.zig").SymbolGenerator;
 const ColorScale = @import("color.zig").ColorScale;
 
 pub const Mode = enum {
@@ -27,26 +27,26 @@ pub const Matrix = struct {
 
     mode: Mode = Mode.Rain,
 
-    matrix: ?[]Column = null,
+    mtrx: ?[]Column = null,
 
     pub fn init(allocator: *std.mem.Allocator, lcg: *MiniLCG, ascii: *AsciiGenerator, scale: *ColorScale, mode: Mode) @This() {
         return Matrix{ .allocator = allocator, .lcg = lcg, .ascii = ascii, .scale = scale, .mode = mode };
     }
 
-    pub fn build(self: *@This(), cols: usize, rows: usize) !void {
-        self.matrix = try self.allocator.alloc(Column, cols);
+    pub fn build(self: *@This(), c: usize, r: usize) !void {
+        self.mtrx = try self.allocator.alloc(Column, c);
 
-        const matrix = self.matrix.?;
+        const mtrx = self.mtrx.?;
 
         const delayMode: u8 = switch (self.mode) {
-            Mode.Rain => @intCast(rows),
+            Mode.Rain => @intCast(r),
             Mode.Wave => @intCast(5),
             Mode.Wall => 0,
         };
 
-        for (matrix) |*column| {
+        for (mtrx) |*column| {
             const delay = self.lcg.randInRange(0, delayMode);
-            column.column = try self.allocator.alloc([]const u8, rows);
+            column.column = try self.allocator.alloc([]const u8, r);
             column.cursor = 0;
             column.loop = 0;
             column.delay = @intCast(delay);
@@ -61,17 +61,35 @@ pub const Matrix = struct {
         return self.ascii.max_bytes();
     }
 
+    pub fn matrix(self: *@This()) ?[]Column {
+        return self.mtrx;
+    }
+
+    pub fn cols(self: *@This()) usize {
+        if (self.mtrx) |mtrx| {
+            return mtrx[0].column.len;
+        }
+        return 0;
+    }
+
+    pub fn rows(self: *@This()) usize {
+        if (self.mtrx) |mtrx| {
+            return mtrx.len;
+        }
+        return 0;
+    }
+
     pub fn next(self: *@This()) !void {
-        if (self.matrix == null) {
+        if (self.matrix() == null) {
             return;
         }
 
-        const matrix = self.matrix.?;
-        if (matrix.len == 0) {
+        const mtrx = self.matrix().?;
+        if (mtrx.len == 0) {
             return;
         }
 
-        for (matrix) |*column| {
+        for (mtrx) |*column| {
             if (column.delay > 0) {
                 column.delay = column.delay - 1;
                 continue;
@@ -88,17 +106,17 @@ pub const Matrix = struct {
     }
 
     pub fn free(self: *@This()) void {
-        if (self.matrix == null) {
+        if (self.matrix() == null) {
             return;
         }
 
-        const matrix = self.matrix.?;
+        const mtrx = self.matrix().?;
 
-        for (matrix) |column| {
+        for (mtrx) |column| {
             self.allocator.free(column.column);
         }
 
-        self.allocator.free(matrix);
+        self.allocator.free(mtrx);
 
         return;
     }
