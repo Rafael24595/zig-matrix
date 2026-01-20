@@ -80,9 +80,10 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
     var lcg = MiniLCG.init(config.seed);
 
-    var asciiGenerator = symbol.SymbolGenerator.init(&lcg, config.symbol_mode);
-    var scale = try color.ColorScale.init(&allocator, config.dropLen, color.rgbOf(config.rainColor), config.rain_mode);
-    var matrixPrinter = MatrixPrinter.init(&allocator, printer, config.formatter, &scale);
+    var asciiGenerator = symbol.SymbolGenerator.init(
+        &lcg,
+        config.symbol_mode,
+    );
 
     try printer.print(console.CLEAN_CONSOLE);
     try printer.print(console.HIDE_CURSOR);
@@ -111,6 +112,22 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         const cols = winsize.cols;
         const rows = winsize.rows - space;
 
+        const drop: usize = calculateDropLenght(config, rows);
+
+        var scale = try color.ColorScale.init(
+            &allocator,
+            drop,
+            color.rgbOf(config.rainColor),
+            config.rain_mode,
+        );
+
+        var matrixPrinter = MatrixPrinter.init(
+            &allocator,
+            printer,
+            config.formatter,
+            &scale,
+        );
+
         var mtrx = matrix.Matrix.init(
             &allocator,
             &lcg,
@@ -118,6 +135,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
             &scale,
             config.matrix_mode,
         );
+
         try mtrx.build(cols, rows);
 
         try printer.print(console.CLEAN_CONSOLE);
@@ -161,10 +179,19 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         }
 
         mtrx.free();
+        scale.free();
     }
 
-    scale.free();
     printer.reset();
+}
+
+pub fn calculateDropLenght(config: *const configuration.Configuration, rows: usize) usize {
+    if (config.drop_len > 0) {
+        return config.drop_len;
+    }
+
+    const f_rows: f32 = @floatFromInt(rows);
+    return @intFromFloat(f_rows * config.drop_per);
 }
 
 pub fn calculatePadding(config: *const configuration.Configuration) usize {
@@ -268,7 +295,7 @@ pub fn print_debug(
         fixedArea,
         cols,
         rows,
-        config.dropLen,
+        config.drop_len,
         time,
     });
 }
