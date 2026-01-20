@@ -1,10 +1,13 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const AtomicOrder = std.builtin.AtomicOrder;
+
 const build = @import("build.zig.zon");
 
 const configuration = @import("configuration/configuration.zig");
 
+const utils = @import("commons/utils.zig");
 const AllocatorTracer = @import("commons/allocator.zig").AllocatorTracer;
 const MiniLCG = @import("commons/mini_lcg.zig").MiniLCG;
 
@@ -12,15 +15,30 @@ const console = @import("io/console.zig");
 const Printer = @import("io/printer.zig").Printer;
 const MatrixPrinter = @import("io/matrix_printer.zig").MatrixPrinter;
 
-const ascii = @import("domain/ascii.zig");
+const symbol = @import("domain/symbol.zig");
 const color = @import("domain/color.zig");
 const matrix = @import("domain/matrix.zig");
 
-var exit_requested: bool = false;
+var start_timestamp = std.atomic.Value(i64).init(0);
+
+var pause = std.atomic.Value(u8).init(0);
+var pause_timestamp = std.atomic.Value(i64).init(0);
+
+var speed_ms = std.atomic.Value(u64).init(0);
+
+var exit = std.atomic.Value(u8).init(0);
+var reload = std.atomic.Value(u8).init(0);
+
+var mutex: std.Thread.Mutex = .{};
+var cond: std.Thread.Condition = .{};
 
 pub fn main() !void {
     try console.enableANSI();
     try console.enableUTF8();
+
+    try console.enableRawMode();
+
+    defer console.disableRawMode();
 
     var basePersistentAllocator = std.heap.page_allocator;
     var persistentAllocator = AllocatorTracer.init(&basePersistentAllocator);
@@ -34,23 +52,36 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(scratchAllocator.allocator());
     defer arena.deinit();
 
-    var printer = Printer{ .arena = &arena, .out = std.fs.File.stdout() };
+    var printer = Printer{
+        .arena = &arena,
+        .out = std.fs.File.stdout(),
+    };
+
     defer printer.reset();
 
-    const config = try configuration.fromArgs(persistentAllocator.allocator(), &printer);
+    const config = try configuration.fromArgs(
+        persistentAllocator.allocator(),
+        &printer,
+    );
 
-    try run(&persistentAllocator, &scratchAllocator, &config, &printer);
+    start_timestamp.store(config.start_ms, AtomicOrder.release);
+    speed_ms.store(config.milliseconds, AtomicOrder.release);
+
+    try run(
+        &persistentAllocator,
+        &scratchAllocator,
+        &config,
+        &printer,
+    );
 }
 
 pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTracer, config: *const configuration.Configuration, printer: *Printer) !void {
-    try defineSignalHandlers();
-
     var allocator = persistentAllocator.allocator();
 
     var lcg = MiniLCG.init(config.seed);
 
-    var asciiGenerator = ascii.AsciiGenerator.init(&lcg, config.asciiMode);
-    var scale = try color.ColorScale.init(&allocator, config.dropLen, color.rgbOf(config.rainColor), config.rainMode);
+    var asciiGenerator = symbol.SymbolGenerator.init(&lcg, config.symbol_mode);
+    var scale = try color.ColorScale.init(&allocator, config.dropLen, color.rgbOf(config.rainColor), config.rain_mode);
     var matrixPrinter = MatrixPrinter.init(&allocator, printer, config.formatter, &scale);
 
     try printer.print(console.CLEAN_CONSOLE);
@@ -60,44 +91,66 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
     defer printer.prints(console.SHOW_CURSOR);
     defer printer.prints(console.RESET_CURSOR);
 
-    while (!exit_requested) {
+    var input_thread = try std.Thread.spawn(
+        .{},
+        runInputLoop,
+        .{},
+    );
+
+    defer input_thread.join();
+
+    while (exit.load(AtomicOrder.acquire) == 0) {
+        _ = reload.fetchXor(1, AtomicOrder.acq_rel);
+
         const winsize = try console.winSize();
 
-        // Tested on Windows CMD.
-        var space: usize = 0;
-        if (config.debug) {
-            space += 4;
-        }
+        const space = calculatePadding(config);
 
         const area = winsize.cols * winsize.rows;
 
         const cols = winsize.cols;
         const rows = winsize.rows - space;
-        const fixedArea = rows * cols;
 
-        var mtrx = matrix.Matrix.init(&allocator, &lcg, &asciiGenerator, &scale, config.matrixMode);
+        var mtrx = matrix.Matrix.init(
+            &allocator,
+            &lcg,
+            &asciiGenerator,
+            &scale,
+            config.matrix_mode,
+        );
         try mtrx.build(cols, rows);
 
         try printer.print(console.CLEAN_CONSOLE);
 
-        var persistentBytes = persistentAllocator.bytes();
-        var scratchBytes = scratchAllocator.bytes();
-        while (!exit_requested) {
+        while (exit.load(AtomicOrder.acquire) == 0 and reload.load(AtomicOrder.acquire) == 0) {
             try printer.print(console.RESET_CURSOR);
 
             if (config.debug) {
-                try printer.printf("{}: {s}\n", .{ build.name, build.version });
-                try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes\n", .{ persistentBytes, scratchBytes });
-                try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any} | Formatter mode: {any}\n", .{ config.milliseconds, config.asciiMode, config.rainColor, config.matrixMode, config.formatter.code() });
-                try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d}\n", .{ config.seed, fixedArea, cols, rows, config.dropLen });
+                try print_debug(
+                    persistentAllocator,
+                    scratchAllocator,
+                    config,
+                    printer,
+                    &mtrx,
+                );
             }
 
             try matrixPrinter.print(&mtrx);
-            try mtrx.next();
-            std.Thread.sleep(config.milliseconds * std.time.ns_per_ms);
 
-            persistentBytes = persistentAllocator.bytes();
-            scratchBytes = scratchAllocator.bytes();
+            if (pause.load(AtomicOrder.acquire) == 0) {
+                try mtrx.next();
+            }
+
+            if (config.controls) {
+                try print_controls(printer);
+            }
+
+            mutex.lock();
+            _ = cond.timedWait(&mutex, speed_ms.raw * std.time.ns_per_ms) catch |err| switch (err) {
+                error.Timeout => true,
+                else => return err,
+            };
+            mutex.unlock();
 
             printer.reset();
 
@@ -114,30 +167,119 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
     printer.reset();
 }
 
-pub fn defineSignalHandlers() !void {
-    if (builtin.os.tag == .windows) {
-        if (std.os.windows.kernel32.SetConsoleCtrlHandler(winCtrlHandler, 1) == 0) {
-            return error.FailedToSetCtrlHandler;
-        }
-        return;
+pub fn calculatePadding(config: *const configuration.Configuration) usize {
+    var space: usize = 0;
+    if (config.debug) {
+        space += 4;
     }
 
-    const action = std.posix.Sigaction{
-        .handler = .{ .handler = unixSigintHandler },
-        .mask = undefined,
-        .flags = 0,
-    };
+    if (config.controls) {
+        space += 1;
+    }
 
-    _ = std.posix.sigaction(std.posix.SIG.INT, &action, null);
+    return space;
 }
 
-fn winCtrlHandler(ctrl_type: std.os.windows.DWORD) callconv(.c) std.os.windows.BOOL {
-    _ = ctrl_type;
-    exit_requested = true;
-    return 1;
+fn runInputLoop() !void {
+    const stdin = std.fs.File.stdin();
+
+    while (exit.load(AtomicOrder.acquire) == 0) {
+        var buf: [1]u8 = undefined;
+        _ = try stdin.read(&buf);
+
+        switch (buf[0]) {
+            'p', 'P', console.SPACE => {
+                const now = std.time.milliTimestamp();
+                if (pause.load(AtomicOrder.acquire) == 0) {
+                    _ = pause_timestamp.store(now, AtomicOrder.release);
+                } else {
+                    const diff = now - pause_timestamp.raw;
+                    _ = start_timestamp.store(diff + start_timestamp.raw, AtomicOrder.release);
+                }
+
+                _ = pause.fetchXor(1, AtomicOrder.acq_rel);
+            },
+            '+' => {
+                const min = @min(1000 * 3, speed_ms.raw + 10);
+                _ = speed_ms.store(min, AtomicOrder.release);
+                _ = cond.signal();
+            },
+            '-' => {
+                const max = speed_ms.raw -| 10;
+                _ = speed_ms.store(max, AtomicOrder.release);
+                _ = cond.signal();
+            },
+            'q', 'Q', console.CTRL_C => {
+                _ = exit.fetchXor(1, AtomicOrder.acq_rel);
+                _ = cond.signal();
+            },
+            else => {},
+        }
+    }
 }
 
-fn unixSigintHandler(sig_num: i32) callconv(.c) void {
-    _ = sig_num;
-    exit_requested = true;
+pub fn print_debug(
+    persistentAllocator: *AllocatorTracer,
+    scratchAllocator: *AllocatorTracer,
+    config: *const configuration.Configuration,
+    printer: *Printer,
+    mtrx: *matrix.Matrix,
+) !void {
+    var scratch = scratchAllocator.allocator();
+
+    const cols = mtrx.cols();
+    const rows = mtrx.rows();
+    const fixedArea = rows * cols;
+
+    var end_ms = std.time.milliTimestamp();
+    if (pause.load(AtomicOrder.acquire) == 1) {
+        end_ms = pause_timestamp.raw;
+    }
+
+    const time = try utils.millisecondsToTime(scratch, end_ms - start_timestamp.raw, null);
+    defer scratch.free(time);
+
+    var paused = false;
+    if (pause.load(AtomicOrder.acquire) == 1) {
+        paused = true;
+    }
+
+    try printer.printf("{}: {s}\n", .{
+        build.name,
+        build.version,
+    });
+
+    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused {any} \n", .{
+        persistentAllocator.bytes(),
+        scratchAllocator.bytes(),
+        paused,
+    });
+
+    try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any} | Formatter mode: {any}\n", .{
+        speed_ms.raw,
+        config.symbol_mode,
+        config.rainColor,
+        config.matrix_mode,
+        config.formatter.code(),
+    });
+
+    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d} | Time: {s} \n", .{
+        config.seed,
+        fixedArea,
+        cols,
+        rows,
+        config.dropLen,
+        time,
+    });
+}
+
+pub fn print_controls(
+    printer: *Printer,
+) !void {
+    try printer.printf("\nPause: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
+        "p, space",
+        "+",
+        "-",
+        "q, ctrl+c",
+    });
 }

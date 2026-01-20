@@ -296,13 +296,13 @@ const Table = struct {
     chars: []const []const u8,
 };
 
-pub const AsciiGenerator = struct {
+pub const SymbolGenerator = struct {
     lcg: *MiniLCG,
 
     table: Table,
 
     pub fn init(lcg: *MiniLCG, mode: Mode) @This() {
-        return AsciiGenerator{
+        return SymbolGenerator{
             .lcg = lcg,
             .table = range(mode),
         };

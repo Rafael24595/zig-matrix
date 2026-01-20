@@ -19,11 +19,11 @@ pub const MatrixPrinter = struct {
 
     // TODO: Refactor after checking the performance impact.
     pub fn print(self: *@This(), mtrx: *Matrix) !void {
-        if (mtrx.matrix == null or mtrx.matrix.?.len == 0) {
+        if (mtrx.matrix() == null or mtrx.matrix().?.len == 0) {
             return;
         }
 
-        const matrix = mtrx.matrix.?;
+        const matrix = mtrx.matrix().?;
         const rows = matrix.len;
         const columns = matrix[0].column.len;
 
