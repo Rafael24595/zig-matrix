@@ -66,7 +66,7 @@ const FLAG_DROP_LENGTH: Flag = Flag{
     .flag_short = "-l",
     .type = "<number>",
     .desc = "Drop length",
-    .name = "milliseconds",
+    .name = "drop`length",
 };
 
 const FLAG_RAIN_COLOR: Flag = Flag{
@@ -117,9 +117,10 @@ pub const Configuration = struct {
 
     start_ms: i64 = 0,
 
-    milliseconds: u64 = 85,
+    milliseconds: u64 = 65,
 
-    dropLen: usize = 10,
+    drop_per: f32 = 0.4,
+    drop_len: usize = 0,
 
     rainColor: color.Color = .Green,
     rain_mode: color.Mode = .Default,
@@ -170,7 +171,7 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_DROP_LENGTH.flag_short)) {
-                config.milliseconds = try config.parseInt(u64, printer, args, i, FLAG_MILLISECONDS, null, null);
+                config.drop_len = try config.parseInt(u64, printer, args, i, FLAG_DROP_LENGTH, null, null);
                 i += 1;
                 continue;
             }
@@ -230,7 +231,12 @@ pub const Configuration = struct {
     pub fn format_flags(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) ![]u8 {
         var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
 
-        try buffer.appendSlice(allocator, "Usage: zig-conway             [options] \n\n");
+        const drop_default = try printer.format(
+            "{d:.2} × matrix height",
+            .{config.drop_per},
+        );
+
+        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
 
         try buffer.appendSlice(allocator, try format_flag(
             printer,
@@ -271,7 +277,7 @@ pub const Configuration = struct {
         try buffer.appendSlice(allocator, try format_flag(
             printer,
             FLAG_DROP_LENGTH,
-            .{ .int = @intCast(config.dropLen) },
+            .{ .str = drop_default },
         ));
 
         try buffer.appendSlice(allocator, try format_flag(
