@@ -232,7 +232,7 @@ pub const Configuration = struct {
         var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
 
         const drop_default = try printer.format(
-            "{d:.2} × matrix height",
+            "{d:.2} x matrix height",
             .{config.drop_per},
         );
 
