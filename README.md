@@ -68,6 +68,12 @@ The `zig-matrix` program supports several command line options to customize the 
 
 ---
 
+### Recommended Terminal Setup
+
+For the most immersive experience, using a **black terminal background** is recommended. This ensures the fire effect and color/symbol themes display as intended.
+
+---
+
 ### Examples
 #### Run with default settings:
 
