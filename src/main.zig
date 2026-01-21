@@ -185,15 +185,6 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
     printer.reset();
 }
 
-pub fn calculateDropLenght(config: *const configuration.Configuration, rows: usize) usize {
-    if (config.drop_len > 0) {
-        return config.drop_len;
-    }
-
-    const f_rows: f32 = @floatFromInt(rows);
-    return @intFromFloat(f_rows * config.drop_per);
-}
-
 pub fn calculatePadding(config: *const configuration.Configuration) usize {
     var space: usize = 0;
     if (config.debug) {
@@ -205,6 +196,15 @@ pub fn calculatePadding(config: *const configuration.Configuration) usize {
     }
 
     return space;
+}
+
+pub fn calculateDropLenght(config: *const configuration.Configuration, rows: usize) usize {
+    if (config.drop_len > 0) {
+        return config.drop_len;
+    }
+
+    const f_rows: f32 = @floatFromInt(rows);
+    return @intFromFloat(f_rows * config.drop_per);
 }
 
 fn runInputLoop() !void {

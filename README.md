@@ -59,7 +59,7 @@ The `zig-matrix` program supports several command line options to customize the 
 | `-d` | Enable debug mode | Off | — |
 | `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
 | `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
-| `-l` | Drop length | 10 | Any unsigned integer |
+| `-l` | Drop length | 0.4 × matrix height | Any unsigned integer |
 | `-c` | Rain color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
 | `-g` | Rain gradient | Default | Default, Linear, Circular |
 | `-r` | ASCII mode | Default | Default, Binary, Latin, LatinUpper, LatinLower, Digits, Symbols, Hex, Base64, Blocks, Extended, Katana, Fade, Matrix, Code, SciFi, Runes, Math, Arcane, Telemetry, Cyrilic, CyrilicUpper, CyrilicLower, Greek, GreekUpper, GreekLower, Arabic, Devanagari, |
