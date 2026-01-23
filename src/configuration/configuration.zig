@@ -69,27 +69,27 @@ const FLAG_DROP_LENGTH: Flag = Flag{
     .name = "drop`length",
 };
 
-const FLAG_RAIN_COLOR: Flag = Flag{
-    .flag_short = "-c",
+const FLAG_THEME_COLOR: Flag = Flag{
+    .flag_short = "-tc",
     .type = "<enum>",
-    .desc = "Rain color",
-    .name = "rain color",
+    .desc = "Theme color",
+    .name = "theme color",
     .aux_desc = "(use \"help\" to list available modes)",
 };
 
-const FLAG_GRADIENT: Flag = Flag{
-    .flag_short = "-g",
+const FLAG_THEME_GRADIENT: Flag = Flag{
+    .flag_short = "-tg",
     .type = "<enum>",
-    .desc = "Rain gradient",
-    .name = "rain gradient",
+    .desc = "Theme gradient",
+    .name = "theme gradient",
     .aux_desc = "(use \"help\" to list available modes)",
 };
 
-const FLAG_SYMBOL_MODE: Flag = Flag{
-    .flag_short = "-sm",
+const FLAG_THEME_SYMBOL: Flag = Flag{
+    .flag_short = "-ts",
     .type = "<enum>",
-    .desc = "Symbol mode",
-    .name = "symbol mode",
+    .desc = "Theme symbol",
+    .name = "Theme symbol",
     .aux_desc = "(use \"help\" to list available modes)",
 };
 
@@ -123,8 +123,8 @@ pub const Configuration = struct {
     drop_len: usize = 0,
 
     rainColor: color.Color = .Green,
-    rain_mode: color.Mode = .Default,
-    symbol_mode: symbol.Mode = .Default,
+    rain_mode: color.ThemeGradient = .Default,
+    symbol_mode: symbol.Theme = .Default,
     matrix_mode: matrix.Mode = .Rain,
 
     formatter: formatter.FormatterUnion = formatter.FormatterUnion{ .rgb = .{} },
@@ -176,20 +176,20 @@ pub const Configuration = struct {
                 continue;
             }
 
-            if (std.mem.eql(u8, arg, FLAG_RAIN_COLOR.flag_short)) {
-                config.rainColor = try config.parseEnum(color.Color, printer, args, i, FLAG_RAIN_COLOR);
+            if (std.mem.eql(u8, arg, FLAG_THEME_COLOR.flag_short)) {
+                config.rainColor = try config.parseEnum(color.Color, printer, args, i, FLAG_THEME_COLOR);
                 i += 1;
                 continue;
             }
 
-            if (std.mem.eql(u8, arg, FLAG_GRADIENT.flag_short)) {
-                config.rain_mode = try config.parseEnum(color.Mode, printer, args, i, FLAG_GRADIENT);
+            if (std.mem.eql(u8, arg, FLAG_THEME_GRADIENT.flag_short)) {
+                config.rain_mode = try config.parseEnum(color.ThemeGradient, printer, args, i, FLAG_THEME_GRADIENT);
                 i += 1;
                 continue;
             }
 
-            if (std.mem.eql(u8, arg, FLAG_SYMBOL_MODE.flag_short)) {
-                config.symbol_mode = try config.parseEnum(symbol.Mode, printer, args, i, FLAG_SYMBOL_MODE);
+            if (std.mem.eql(u8, arg, FLAG_THEME_SYMBOL.flag_short)) {
+                config.symbol_mode = try config.parseEnum(symbol.Theme, printer, args, i, FLAG_THEME_SYMBOL);
                 i += 1;
                 continue;
             }
@@ -282,19 +282,19 @@ pub const Configuration = struct {
 
         try buffer.appendSlice(allocator, try format_flag(
             printer,
-            FLAG_RAIN_COLOR,
+            FLAG_THEME_COLOR,
             .{ .str = @tagName(config.rainColor) },
         ));
 
         try buffer.appendSlice(allocator, try format_flag(
             printer,
-            FLAG_GRADIENT,
+            FLAG_THEME_GRADIENT,
             .{ .str = @tagName(config.rain_mode) },
         ));
 
         try buffer.appendSlice(allocator, try format_flag(
             printer,
-            FLAG_SYMBOL_MODE,
+            FLAG_THEME_SYMBOL,
             .{ .str = @tagName(config.symbol_mode) },
         ));
 

@@ -2,7 +2,7 @@ const std = @import("std");
 
 const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
 
-pub const Mode = enum {
+pub const Theme = enum {
     Default,
     Binary,
     Latin,
@@ -35,7 +35,50 @@ pub const Mode = enum {
     //Emoji
 };
 
-const ASCII_TABLE = Table{
+const ThemeMeta = struct {
+    max_bytes: usize,
+    chars: []const []const u8,
+};
+
+fn mixTables(a: *const ThemeMeta, b: *const ThemeMeta) ThemeMeta {
+    return ThemeMeta{
+        .max_bytes = @max(a.max_bytes, b.max_bytes),
+        .chars = a.chars ++ b.chars,
+    };
+}
+
+const ThemeMap = [_]ThemeMeta{
+    ASCII_TABLE,
+    BINARY_TABLE,
+    LATIN_TABLE,
+    LATIN_UPPER_TABLE,
+    LATIN_LOWER_TABLE,
+    DIGITS_TABLE,
+    SYMBOLS_TABLE,
+    HEX_TABLE,
+    BASE64_TABLE,
+    BLOCKS_TABLE,
+    EXTENDED_TABLE,
+    KATAKANA_TABLE,
+    FADE_TABLE,
+    MATRIX_RAIN_TABLE,
+    CODE_TABLE,
+    SCIFI_TABLE,
+    RUNES_TABLE,
+    MATH_TABLE,
+    ARCANE_TABLE,
+    TELEMETRY_TABLE,
+    CYRILLIC_TABLE,
+    CYRILLIC_UPPER_TABLE,
+    CYRILLIC_LOWER_TABLE,
+    GREEK_TABLE,
+    GREEK_UPPER_TABLE,
+    GREEK_LOWER_TABLE,
+    ARABIC_TABLE,
+    DEVANAGARI_TABLE,
+};
+
+const ASCII_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         "!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/",
@@ -48,7 +91,7 @@ const ASCII_TABLE = Table{
     },
 };
 
-const BINARY_TABLE = Table{
+const BINARY_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         "0", "1",
@@ -57,7 +100,7 @@ const BINARY_TABLE = Table{
 
 const LATIN_TABLE = mixTables(&LATIN_UPPER_TABLE, &LATIN_LOWER_TABLE);
 
-const LATIN_UPPER_TABLE = Table{
+const LATIN_UPPER_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
@@ -65,7 +108,7 @@ const LATIN_UPPER_TABLE = Table{
     },
 };
 
-const LATIN_LOWER_TABLE = Table{
+const LATIN_LOWER_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
@@ -73,14 +116,14 @@ const LATIN_LOWER_TABLE = Table{
     },
 };
 
-const DIGITS_TABLE = Table{
+const DIGITS_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
     },
 };
 
-const SYMBOLS_TABLE = Table{
+const SYMBOLS_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "=",  "+",
@@ -89,7 +132,7 @@ const SYMBOLS_TABLE = Table{
     },
 };
 
-const HEX_TABLE = Table{
+const HEX_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -97,7 +140,7 @@ const HEX_TABLE = Table{
     },
 };
 
-const BASE64_TABLE = Table{
+const BASE64_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
@@ -107,7 +150,7 @@ const BASE64_TABLE = Table{
     },
 };
 
-const BLOCKS_TABLE = Table{
+const BLOCKS_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "█", "▓", "▒", "░",
@@ -118,7 +161,7 @@ const BLOCKS_TABLE = Table{
     },
 };
 
-const EXTENDED_TABLE = Table{
+const EXTENDED_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "§",  "¶",  "±",  "µ",  "¤",
@@ -127,7 +170,7 @@ const EXTENDED_TABLE = Table{
     },
 };
 
-const KATAKANA_TABLE = Table{
+const KATAKANA_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "ｦ", "ｧ", "ｨ", "ｩ", "ｪ", "ｫ",
@@ -143,7 +186,7 @@ const KATAKANA_TABLE = Table{
     },
 };
 
-const FADE_TABLE = Table{
+const FADE_TABLE = ThemeMeta{
     .max_bytes = 1,
     .chars = &[_][]const u8{
         " ", ".", ":", "-", "=", "+", "*", "#", "%", "@",
@@ -152,7 +195,7 @@ const FADE_TABLE = Table{
 
 const MATRIX_RAIN_TABLE = mixTables(&KATAKANA_TABLE, &DIGITS_TABLE);
 
-const CODE_TABLE = Table{
+const CODE_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "0", "1", "{", "}", "[", "]",
@@ -160,7 +203,7 @@ const CODE_TABLE = Table{
     },
 };
 
-const SCIFI_TABLE = Table{
+const SCIFI_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "·",  "•", "°",  "*",   "+", "×",
@@ -168,7 +211,7 @@ const SCIFI_TABLE = Table{
     },
 };
 
-const RUNES_TABLE = Table{
+const RUNES_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ",
@@ -176,7 +219,7 @@ const RUNES_TABLE = Table{
     },
 };
 
-const MATH_TABLE = Table{
+const MATH_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "±",  "×",  "÷",  "=",   "≠",
@@ -186,7 +229,7 @@ const MATH_TABLE = Table{
     },
 };
 
-const ARCANE_TABLE = Table{
+const ARCANE_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "⊗", "⊕", "⊖", "⊘",
@@ -195,7 +238,7 @@ const ARCANE_TABLE = Table{
     },
 };
 
-const TELEMETRY_TABLE = Table{
+const TELEMETRY_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "◁", "▷", "△", "▽",
@@ -206,7 +249,7 @@ const TELEMETRY_TABLE = Table{
 
 const CYRILLIC_TABLE = mixTables(&CYRILLIC_UPPER_TABLE, &CYRILLIC_LOWER_TABLE);
 
-const CYRILLIC_UPPER_TABLE = Table{
+const CYRILLIC_UPPER_TABLE = ThemeMeta{
     .max_bytes = 2,
     .chars = &[_][]const u8{
         "А", "Б", "В", "Г", "Д", "Е", "Ё", "Ж", "З", "И", "Й", "К", "Л", "М",
@@ -215,7 +258,7 @@ const CYRILLIC_UPPER_TABLE = Table{
     },
 };
 
-const CYRILLIC_LOWER_TABLE = Table{
+const CYRILLIC_LOWER_TABLE = ThemeMeta{
     .max_bytes = 2,
     .chars = &[_][]const u8{
         "а", "б", "в", "г", "д", "е", "ё", "ж", "з", "и", "й", "к", "л", "м",
@@ -226,7 +269,7 @@ const CYRILLIC_LOWER_TABLE = Table{
 
 const GREEK_TABLE = mixTables(&GREEK_UPPER_TABLE, &GREEK_LOWER_TABLE);
 
-const GREEK_UPPER_TABLE = Table{
+const GREEK_UPPER_TABLE = ThemeMeta{
     .max_bytes = 2,
     .chars = &[_][]const u8{
         "Α", "Β", "Γ", "Δ", "Ε", "Ζ", "Η", "Θ", "Ι", "Κ", "Λ", "Μ",
@@ -234,7 +277,7 @@ const GREEK_UPPER_TABLE = Table{
     },
 };
 
-const GREEK_LOWER_TABLE = Table{
+const GREEK_LOWER_TABLE = ThemeMeta{
     .max_bytes = 2,
     .chars = &[_][]const u8{
         "α", "β", "γ", "δ", "ε", "ζ", "η", "θ", "ι", "κ", "λ", "μ",
@@ -242,7 +285,7 @@ const GREEK_LOWER_TABLE = Table{
     },
 };
 
-const ARABIC_TABLE = Table{
+const ARABIC_TABLE = ThemeMeta{
     .max_bytes = 2,
     .chars = &[_][]const u8{
         "ء", "آ", "أ", "ؤ", "إ", "ئ", "ا", "ب", "ة", "ت", "ث", "ج", "ح", "خ", "د", "ذ",
@@ -251,7 +294,7 @@ const ARABIC_TABLE = Table{
     },
 };
 
-const DEVANAGARI_TABLE = Table{
+const DEVANAGARI_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "अ", "आ", "इ", "ई", "उ", "ऊ", "ऋ", "ऌ", "ए", "ऐ", "ओ", "औ",
@@ -261,7 +304,7 @@ const DEVANAGARI_TABLE = Table{
     },
 };
 
-const CHINESE_TABLE = Table{
+const CHINESE_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
@@ -272,7 +315,7 @@ const CHINESE_TABLE = Table{
     },
 };
 
-const EMOJI_TABLE = Table{
+const EMOJI_TABLE = ThemeMeta{
     .max_bytes = 3,
     .chars = &[_][]const u8{
         "↑", "↓", "→", "←", "↖", "↗", "↘", "↙", "⇑", "⇓", "⇐", "⇒",
@@ -284,71 +327,28 @@ const EMOJI_TABLE = Table{
     },
 };
 
-fn mixTables(a: *const Table, b: *const Table) Table {
-    return Table{
-        .max_bytes = @max(a.max_bytes, b.max_bytes),
-        .chars = a.chars ++ b.chars,
-    };
+pub fn metaOf(m: Theme) ThemeMeta {
+    return ThemeMap[@intFromEnum(m)];
 }
-
-const Table = struct {
-    max_bytes: usize,
-    chars: []const []const u8,
-};
 
 pub const SymbolGenerator = struct {
     lcg: *MiniLCG,
 
-    table: Table,
+    meta: ThemeMeta,
 
-    pub fn init(lcg: *MiniLCG, mode: Mode) @This() {
+    pub fn init(lcg: *MiniLCG, mode: Theme) @This() {
         return SymbolGenerator{
             .lcg = lcg,
-            .table = range(mode),
-        };
-    }
-
-    fn range(mode: Mode) Table {
-        return switch (mode) {
-            Mode.Default => ASCII_TABLE,
-            Mode.Binary => BINARY_TABLE,
-            Mode.Latin => LATIN_TABLE,
-            Mode.LatinUpper => LATIN_UPPER_TABLE,
-            Mode.LatinLower => LATIN_LOWER_TABLE,
-            Mode.Digits => DIGITS_TABLE,
-            Mode.Symbols => SYMBOLS_TABLE,
-            Mode.Hex => HEX_TABLE,
-            Mode.Base64 => BASE64_TABLE,
-            Mode.Blocks => BLOCKS_TABLE,
-            Mode.Extended => EXTENDED_TABLE,
-            Mode.Katana => KATAKANA_TABLE,
-            Mode.Fade => FADE_TABLE,
-            Mode.Matrix => MATRIX_RAIN_TABLE,
-            Mode.Code => CODE_TABLE,
-            Mode.SciFi => SCIFI_TABLE,
-            Mode.Runes => RUNES_TABLE,
-            Mode.Math => MATH_TABLE,
-            Mode.Arcane => ARCANE_TABLE,
-            Mode.Telemetry => TELEMETRY_TABLE,
-            Mode.Cyrilic => CYRILLIC_TABLE,
-            Mode.CyrilicUpper => CYRILLIC_UPPER_TABLE,
-            Mode.CyrilicLower => CYRILLIC_LOWER_TABLE,
-            Mode.Greek => GREEK_TABLE,
-            Mode.GreekUpper => GREEK_UPPER_TABLE,
-            Mode.GreekLower => GREEK_LOWER_TABLE,
-            Mode.Arabic => ARABIC_TABLE,
-            Mode.Devanagari => DEVANAGARI_TABLE,
-            //Mode.Chinese => CHINESE_TABLE,
-            //Mode.Emoji => EMOJI_TABLE,
+            .meta = metaOf(mode),
         };
     }
 
     pub fn max_bytes(self: *@This()) usize {
-        return self.table.max_bytes;
+        return self.meta.max_bytes;
     }
 
     pub fn next(self: *@This()) []const u8 {
-        const chars = self.table.chars;
+        const chars = self.meta.chars;
         const idx = self.lcg.randInRange(0, @intCast(chars.len - 1));
         return chars[idx];
     }
