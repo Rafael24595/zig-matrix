@@ -13,7 +13,7 @@ const MiniLCG = @import("commons/mini_lcg.zig").MiniLCG;
 
 const console = @import("io/console.zig");
 const Printer = @import("io/printer.zig").Printer;
-const MatrixPrinter = @import("io/matrix_printer.zig").MatrixPrinter;
+const LinearMatrixPrinter = @import("io/matrix_printer.zig").LinearMatrixPrinter;
 
 const symbol = @import("domain/symbol.zig");
 const color = @import("domain/color.zig");
@@ -121,14 +121,14 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
             config.rain_mode,
         );
 
-        var matrixPrinter = MatrixPrinter.init(
+        var matrixPrinter = LinearMatrixPrinter.init(
             &allocator,
             printer,
             config.formatter,
             &scale,
         );
 
-        var mtrx = matrix.Matrix.init(
+        var mtrx = matrix.LinearMatrix.init(
             &allocator,
             &lcg,
             &asciiGenerator,
@@ -250,12 +250,12 @@ pub fn print_debug(
     scratchAllocator: *AllocatorTracer,
     config: *const configuration.Configuration,
     printer: *Printer,
-    mtrx: *matrix.Matrix,
+    mtrx: *matrix.LinearMatrix,
 ) !void {
     var scratch = scratchAllocator.allocator();
 
-    const cols = mtrx.cols();
-    const rows = mtrx.rows();
+    const cols = mtrx.cols_len();
+    const rows = mtrx.rows_len();
     const fixedArea = rows * cols;
 
     var end_ms = std.time.milliTimestamp();

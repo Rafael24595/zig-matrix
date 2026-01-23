@@ -3,10 +3,10 @@ const std = @import("std");
 const Printer = @import("printer.zig").Printer;
 
 const ColorScale = @import("../domain/color.zig").ColorScale;
-const Matrix = @import("../domain/matrix.zig").Matrix;
+const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 const Formatter = @import("formatter.zig").FormatterUnion;
 
-pub const MatrixPrinter = struct {
+pub const LinearMatrixPrinter = struct {
     allocator: *std.mem.Allocator,
 
     printer: *Printer,
@@ -18,20 +18,22 @@ pub const MatrixPrinter = struct {
     }
 
     // TODO: Refactor after checking the performance impact.
-    pub fn print(self: *@This(), mtrx: *Matrix) !void {
-        if (mtrx.matrix() == null or mtrx.matrix().?.len == 0) {
+    pub fn print(self: *@This(), mtrx: *LinearMatrix) !void {
+        if (mtrx.vector() == null or mtrx.vector().?.len == 0) {
             return;
         }
 
-        const matrix = mtrx.matrix().?;
-        const rows = matrix.len;
-        const columns = matrix[0].column.len;
+        const matrix = mtrx.vector().?;
+        const metadata = mtrx.metadata().?;
+
+        const rows = mtrx.rows_len();
+        const cols = mtrx.cols_len();
 
         const prefix = self.formatter.prefix();
         const sufix = self.formatter.sufix();
 
         const char_fmt_len = self.formatter.fmt_bytes() + mtrx.max_char_bytes();
-        const mtrx_fmt_len = rows * columns * char_fmt_len;
+        const mtrx_fmt_len = rows * cols * char_fmt_len;
         const estimatedSize = prefix.len + mtrx_fmt_len + sufix.len;
 
         var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, estimatedSize);
@@ -44,31 +46,40 @@ pub const MatrixPrinter = struct {
             try buffer.appendSlice(self.allocator.*, prefix);
         }
 
-        for (0..columns) |column| {
-            for (0..rows) |row| {
-                const rowRef = matrix[row];
-                if (rowRef.delay > 0) {
+        for (0..rows) |x| {
+            const col_start = x * cols;
+
+            for (0..cols) |y| {
+                const meta = metadata[y];
+                if (meta.delay > 0) {
                     try buffer.append(self.allocator.*, ' ');
                     continue;
                 }
 
-                const cursor = rowRef.cursor;
-                const scaleIndex = (columns + cursor - column) % columns;
-                if (rowRef.loop == 0 and cursor < column) {
+                const cursor = meta.cursor;
+                if (meta.loop == 0 and cursor < x) {
                     try buffer.append(self.allocator.*, ' ');
                     continue;
                 }
 
+                const scaleIndex = (rows + cursor - x) % rows;
                 const color = self.scale.findUnsafe(scaleIndex) orelse {
                     try buffer.append(self.allocator.*, ' ');
                     continue;
                 };
 
-                const formatted = try self.formatter.format(buf, color[0], color[1], color[2], rowRef.column[column]);
+                const formatted = try self.formatter.format(
+                    buf,
+                    color[0],
+                    color[1],
+                    color[2],
+                    matrix[col_start + y],
+                );
+
                 try buffer.appendSlice(self.allocator.*, formatted);
             }
 
-            if (column < columns - 1) {
+            if (x < rows - 1) {
                 try buffer.append(self.allocator.*, '\n');
             }
         }

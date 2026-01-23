@@ -27,7 +27,7 @@ pub const Color = enum {
     NeonRed,
 };
 
-const color_values = [_][3]u8{
+const ColorMap = [_][3]u8{
     .{ 255, 255, 255 }, // White
     .{ 0, 0, 0 }, // Black
     .{ 255, 0, 0 }, // Red
@@ -55,10 +55,10 @@ const color_values = [_][3]u8{
 };
 
 pub fn rgbOf(c: Color) [3]u8 {
-    return color_values[@intFromEnum(c)];
+    return ColorMap[@intFromEnum(c)];
 }
 
-pub const Mode = enum {
+pub const ThemeGradient = enum {
     Default,
     Linear,
     Circular,
@@ -68,9 +68,9 @@ pub const ColorScale = struct {
     allocator: *std.mem.Allocator,
     map: ?[][3]u8 = null,
 
-    mode: Mode = Mode.Default,
+    mode: ThemeGradient = ThemeGradient.Default,
 
-    pub fn init(allocator: *std.mem.Allocator, scale: usize, base: [3]u8, mode: Mode) !@This() {
+    pub fn init(allocator: *std.mem.Allocator, scale: usize, base: [3]u8, mode: ThemeGradient) !@This() {
         var self = ColorScale{ .allocator = allocator, .mode = mode };
 
         self.map = try self.allocator.alloc([3]u8, scale + 1);
@@ -78,13 +78,13 @@ pub const ColorScale = struct {
         const map = self.map.?;
         for (0..scale + 1) |i| {
             switch (mode) {
-                Mode.Default => {
+                ThemeGradient.Default => {
                     map[i] = self.scaleColorDefault(i, scale, base);
                 },
-                Mode.Circular => {
+                ThemeGradient.Circular => {
                     map[i] = self.scaleColorCircular(i, scale, base);
                 },
-                Mode.Linear => {
+                ThemeGradient.Linear => {
                     map[i] = self.scaleColorLinear(i, scale, base);
                 },
             }
