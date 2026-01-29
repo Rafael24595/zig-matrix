@@ -76,6 +76,8 @@ pub fn main() !void {
 }
 
 pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTracer, config: *const configuration.Configuration, printer: *Printer) !void {
+    try defineSignalHandlers();
+
     var allocator = persistentAllocator.allocator();
 
     var lcg = MiniLCG.init(config.seed);
@@ -85,12 +87,11 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
         config.symbol_mode,
     );
 
-    try printer.print(console.CLEAN_CONSOLE);
+    try printer.print(console.CLEAN_ALL);
     try printer.print(console.HIDE_CURSOR);
 
-    defer printer.prints(console.CLEAN_CONSOLE);
     defer printer.prints(console.SHOW_CURSOR);
-    defer printer.prints(console.RESET_CURSOR);
+    defer printer.prints(console.CLEAN_ALL);
 
     var input_thread = try std.Thread.spawn(
         .{},
@@ -309,4 +310,34 @@ pub fn print_controls(
         "-",
         "q, ctrl+c",
     });
+}
+
+pub fn defineSignalHandlers() !void {
+    if (builtin.os.tag == .windows) {
+        if (std.os.windows.kernel32.SetConsoleCtrlHandler(winCtrlHandler, 1) == 0) {
+            return error.FailedToSetCtrlHandler;
+        }
+        return;
+    }
+
+    const action = std.posix.Sigaction{
+        .handler = .{ .handler = unixSigintHandler },
+        .mask = undefined,
+        .flags = 0,
+    };
+
+    _ = std.posix.sigaction(std.posix.SIG.INT, &action, null);
+}
+
+fn winCtrlHandler(ctrl_type: std.os.windows.DWORD) callconv(.c) std.os.windows.BOOL {
+    _ = ctrl_type;
+    _ = exit.fetchXor(1, AtomicOrder.acq_rel);
+    _ = cond.signal();
+    return 1;
+}
+
+fn unixSigintHandler(sig_num: i32) callconv(.c) void {
+    _ = sig_num;
+    _ = exit.fetchXor(1, AtomicOrder.acq_rel);
+    _ = cond.signal();
 }
