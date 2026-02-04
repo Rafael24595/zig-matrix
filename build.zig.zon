@@ -1,6 +1,6 @@
 .{
     .name = .zig_matrix,
-    .version = "0.5.1",
+    .version = "0.5.2",
     .fingerprint = 0xb4639a481dce360e,
     .minimum_zig_version = "0.15.1",
     .dependencies = .{},
