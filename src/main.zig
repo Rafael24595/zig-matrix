@@ -174,7 +174,7 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
             printer.reset();
 
             const newWinsize = try console.winSize();
-            if (area != newWinsize.cols * newWinsize.rows) {
+            if (winsize.cols != newWinsize.cols or winsize.rows != newWinsize.rows) {
                 break;
             }
         }
