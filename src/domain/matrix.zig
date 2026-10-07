@@ -11,7 +11,7 @@ pub const Mode = enum {
     Wall,
 };
 
-const Meta = struct {
+pub const Meta = struct {
     cursor: usize,
     delay: usize,
     loop: usize,

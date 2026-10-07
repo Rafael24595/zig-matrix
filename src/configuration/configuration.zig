@@ -12,6 +12,8 @@ const formatter = @import("../io/formatter.zig");
 
 const TypeFormatter = @import("../commons/utils.zig").TypeFormatter;
 
+const orientation = @import("../domain/orientation.zig");
+
 const Flag = struct {
     flag_short: []const u8,
     flag_long: ?[]const u8 = null,
@@ -109,6 +111,14 @@ const FLAG_COLOR_MODE: Flag = Flag{
     .aux_desc = "(use \"help\" to list available modes)",
 };
 
+const FLAG_ORIENTATION_MODE: Flag = Flag{
+    .flag_short = "-o",
+    .type = "<enum>",
+    .desc = "Matrix orientation",
+    .name = "orientation",
+    .aux_desc = "(vertical or horizontal)",
+};
+
 pub const Configuration = struct {
     debug: bool = false,
     controls: bool = false,
@@ -128,6 +138,8 @@ pub const Configuration = struct {
     matrix_mode: matrix.Mode = .Rain,
 
     formatter: formatter.FormatterUnion = formatter.FormatterUnion{ .rgb = .{} },
+
+    orientation: orientation.Orientation = .vertical,
 
     pub fn init(allocator: std.mem.Allocator, printer: *Printer, args: [][:0]u8) !@This() {
         defer printer.reset();
@@ -207,6 +219,12 @@ pub const Configuration = struct {
                 continue;
             }
 
+            if (std.mem.eql(u8, arg, FLAG_ORIENTATION_MODE.flag_short)) {
+                config.orientation = try config.parseEnum(orientation.Orientation, printer, args, i, FLAG_ORIENTATION_MODE);
+                i += 1;
+                continue;
+            }
+
             try printer.printf("Unknown argument: {s}\n", .{arg});
             std.process.exit(1);
         }
@@ -236,7 +254,7 @@ pub const Configuration = struct {
             .{config.drop_per},
         );
 
-        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
+        try buffer.appendSlice(allocator, "\nUsage: zig-matrix             [options] \n\n");
 
         try buffer.appendSlice(allocator, try format_flag(
             printer,
@@ -308,6 +326,12 @@ pub const Configuration = struct {
             printer,
             FLAG_COLOR_MODE,
             .{ .str = @tagName(config.formatter.code()) },
+        ));
+
+        try buffer.appendSlice(allocator, try format_flag(
+            printer,
+            FLAG_ORIENTATION_MODE,
+            .{ .str = @tagName(config.orientation) },
         ));
 
         return buffer.items;
