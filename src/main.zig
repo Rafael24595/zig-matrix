@@ -14,6 +14,7 @@ const MiniLCG = @import("commons/mini_lcg.zig").MiniLCG;
 const console = @import("io/console.zig");
 const Printer = @import("io/printer.zig").Printer;
 const LinearMatrixPrinter = @import("io/matrix_printer.zig").LinearMatrixPrinter;
+const RenderContext = @import("app/render_context.zig").RenderContext;
 
 const symbol = @import("domain/symbol.zig");
 const color = @import("domain/color.zig");
@@ -75,7 +76,12 @@ pub fn main() !void {
     );
 }
 
-pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTracer, config: *const configuration.Configuration, printer: *Printer) !void {
+pub fn run(
+    persistentAllocator: *AllocatorTracer,
+    scratchAllocator: *AllocatorTracer,
+    config: *const configuration.Configuration,
+    printer: *Printer,
+) !void {
     try defineSignalHandlers();
 
     var allocator = persistentAllocator.allocator();
@@ -106,38 +112,18 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
 
         const winsize = try console.winSize();
 
-        const space = calculatePadding(config);
+        var context: RenderContext = undefined;
 
-        const area = winsize.cols * winsize.rows;
-
-        const cols = winsize.cols;
-        const rows = winsize.rows - space;
-
-        const drop: usize = calculateDropLenght(config, rows);
-
-        var scale = try color.ColorScale.init(
+        try context.init(
             &allocator,
-            drop,
-            color.rgbOf(config.rainColor),
-            config.rain_mode,
-        );
-
-        var matrixPrinter = LinearMatrixPrinter.init(
-            &allocator,
+            winsize,
+            config,
             printer,
-            config.formatter,
-            &scale,
-        );
-
-        var mtrx = matrix.LinearMatrix.init(
-            &allocator,
             &lcg,
             &asciiGenerator,
-            &scale,
-            config.matrix_mode,
         );
 
-        try mtrx.build(cols, rows);
+        defer context.deinit();
 
         try printer.print(console.CLEAN_CONSOLE);
 
@@ -150,14 +136,14 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                     scratchAllocator,
                     config,
                     printer,
-                    &mtrx,
+                    &context.matrix,
                 );
             }
 
-            try matrixPrinter.print(&mtrx);
+            try context.matrixPrinter.print(&context.matrix);
 
             if (pause.load(AtomicOrder.acquire) == 0) {
-                try mtrx.next();
+                try context.matrix.next();
             }
 
             if (config.controls) {
@@ -178,34 +164,9 @@ pub fn run(persistentAllocator: *AllocatorTracer, scratchAllocator: *AllocatorTr
                 break;
             }
         }
-
-        mtrx.free();
-        scale.free();
     }
 
     printer.reset();
-}
-
-pub fn calculatePadding(config: *const configuration.Configuration) usize {
-    var space: usize = 0;
-    if (config.debug) {
-        space += 4;
-    }
-
-    if (config.controls) {
-        space += 1;
-    }
-
-    return space;
-}
-
-pub fn calculateDropLenght(config: *const configuration.Configuration, rows: usize) usize {
-    if (config.drop_len > 0) {
-        return config.drop_len;
-    }
-
-    const f_rows: f32 = @floatFromInt(rows);
-    return @intFromFloat(f_rows * config.drop_per);
 }
 
 fn runInputLoop() !void {
