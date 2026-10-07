@@ -236,7 +236,7 @@ pub const Configuration = struct {
             .{config.drop_per},
         );
 
-        try buffer.appendSlice(allocator, "\nUsage: zig-conway             [options] \n\n");
+        try buffer.appendSlice(allocator, "\nUsage: zig-matrix             [options] \n\n");
 
         try buffer.appendSlice(allocator, try format_flag(
             printer,
