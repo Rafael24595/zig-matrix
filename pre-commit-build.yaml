@@ -22,4 +22,3 @@ hooks:
         tag: 0.18.1
         target: zig/sh
         name: run-tests.sh
-        disabled: true
