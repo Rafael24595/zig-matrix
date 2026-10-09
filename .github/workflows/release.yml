@@ -8,4 +8,4 @@ permissions:
 
 jobs:
   release:
-    uses: Rafael24595/github-workflows/.github/workflows/zig-release.yml@main
+    uses: Rafael24595/github-workflows/.github/workflows/zig-executable.yml@main
