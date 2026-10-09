@@ -1,37 +1,19 @@
 const std = @import("std");
-const builtin = @import("builtin");
-
-const AtomicOrder = std.builtin.AtomicOrder;
-
-const build = @import("build.zig.zon");
 
 const configuration = @import("configuration/configuration.zig");
 
-const utils = @import("commons/utils.zig");
+const debug = @import("app/debug.zig");
+const RenderContext = @import("app/render_context.zig").RenderContext;
+const RuntimeState = @import("app/runtime_state.zig").RuntimeState;
+const signals = @import("app/signals.zig");
+
 const AllocatorTracer = @import("commons/allocator.zig").AllocatorTracer;
 const MiniLCG = @import("commons/mini_lcg.zig").MiniLCG;
 
 const console = @import("io/console.zig");
 const Printer = @import("io/printer.zig").Printer;
-const LinearMatrixPrinter = @import("io/matrix_printer.zig").LinearMatrixPrinter;
-const RenderContext = @import("app/render_context.zig").RenderContext;
 
-const symbol = @import("domain/symbol.zig");
-const color = @import("domain/color.zig");
-const matrix = @import("domain/matrix.zig");
-
-var start_timestamp = std.atomic.Value(i64).init(0);
-
-var pause = std.atomic.Value(u8).init(0);
-var pause_timestamp = std.atomic.Value(i64).init(0);
-
-var speed_ms = std.atomic.Value(u64).init(0);
-
-var exit = std.atomic.Value(u8).init(0);
-var reload = std.atomic.Value(u8).init(0);
-
-var mutex: std.Thread.Mutex = .{};
-var cond: std.Thread.Condition = .{};
+const SymbolGenerator = @import("domain/symbol.zig").SymbolGenerator;
 
 pub fn main() !void {
     var basePersistentAllocator = std.heap.page_allocator;
@@ -58,8 +40,10 @@ pub fn main() !void {
         &printer,
     );
 
-    start_timestamp.store(config.start_ms, AtomicOrder.release);
-    speed_ms.store(config.milliseconds, AtomicOrder.release);
+    var state = RuntimeState{};
+
+    state.start_timestamp.store(config.start_ms, .release);
+    state.speed_ms.store(config.milliseconds, .release);
 
     try console.enableANSI();
     try console.enableUTF8();
@@ -69,6 +53,7 @@ pub fn main() !void {
     defer console.disableRawMode();
 
     try run(
+        &state,
         &persistentAllocator,
         &scratchAllocator,
         &config,
@@ -76,19 +61,20 @@ pub fn main() !void {
     );
 }
 
-pub fn run(
+inline fn run(
+    state: *RuntimeState,
     persistentAllocator: *AllocatorTracer,
     scratchAllocator: *AllocatorTracer,
     config: *const configuration.Configuration,
     printer: *Printer,
 ) !void {
-    try defineSignalHandlers();
+    try signals.install(state, onInterrupt);
 
     var allocator = persistentAllocator.allocator();
 
     var lcg = MiniLCG.init(config.seed);
 
-    var asciiGenerator = symbol.SymbolGenerator.init(
+    var asciiGenerator = SymbolGenerator.init(
         &lcg,
         config.symbol_mode,
     );
@@ -102,77 +88,96 @@ pub fn run(
     var input_thread = try std.Thread.spawn(
         .{},
         runInputLoop,
-        .{},
+        .{state},
     );
 
     defer input_thread.join();
 
-    while (exit.load(AtomicOrder.acquire) == 0) {
-        _ = reload.fetchXor(1, AtomicOrder.acq_rel);
+    while (!shouldExit(state)) {
+        _ = state.consumeReload();
 
-        const winsize = try console.winSize();
-
-        var context: RenderContext = undefined;
-
-        try context.init(
+        try runRenderCycle(
             &allocator,
-            winsize,
+            persistentAllocator,
+            scratchAllocator,
+            state,
             config,
             printer,
             &lcg,
             &asciiGenerator,
         );
-
-        defer context.deinit();
-
-        try printer.print(console.CLEAN_CONSOLE);
-
-        while (exit.load(AtomicOrder.acquire) == 0 and reload.load(AtomicOrder.acquire) == 0) {
-            try printer.print(console.RESET_CURSOR);
-
-            if (config.debug) {
-                try print_debug(
-                    persistentAllocator,
-                    scratchAllocator,
-                    config,
-                    printer,
-                    &context.matrix,
-                );
-            }
-
-            try context.matrixPrinter.print(&context.matrix);
-
-            if (pause.load(AtomicOrder.acquire) == 0) {
-                try context.matrix.next();
-            }
-
-            if (config.controls) {
-                try print_controls(printer);
-            }
-
-            mutex.lock();
-            _ = cond.timedWait(&mutex, speed_ms.raw * std.time.ns_per_ms) catch |err| switch (err) {
-                error.Timeout => true,
-                else => return err,
-            };
-            mutex.unlock();
-
-            printer.reset();
-
-            const newWinsize = try console.winSize();
-            if (winsize.cols != newWinsize.cols or winsize.rows != newWinsize.rows) {
-                break;
-            }
-        }
     }
 
     printer.reset();
 }
 
-fn runInputLoop() !void {
+inline fn runRenderCycle(
+    allocator: *std.mem.Allocator,
+    persistentAllocator: *AllocatorTracer,
+    scratchAllocator: *AllocatorTracer,
+    state: *RuntimeState,
+    config: *const configuration.Configuration,
+    printer: *Printer,
+    lcg: *MiniLCG,
+    asciiGenerator: *SymbolGenerator,
+) !void {
+    const winsize = try console.winSize();
+
+    var context: RenderContext = undefined;
+
+    try context.init(
+        allocator,
+        winsize,
+        config,
+        printer,
+        lcg,
+        asciiGenerator,
+    );
+
+    defer context.deinit();
+
+    try printer.print(console.CLEAN_CONSOLE);
+
+    while (!shouldExit(state) and !shouldReload(state)) {
+        try printer.print(console.RESET_CURSOR);
+
+        if (config.debug) {
+            try debug.print_debug(
+                state,
+                persistentAllocator,
+                scratchAllocator,
+                config,
+                printer,
+                &context.matrix,
+            );
+        }
+
+        try context.matrixPrinter.print(&context.matrix);
+
+        if (!state.pause.load(.acquire)) {
+            try context.matrix.next();
+        }
+
+        if (config.controls) {
+            try debug.print_controls(printer);
+        }
+
+        const speed = state.speed_ms.load(.acquire);
+        try state.waitForFrame(speed * std.time.ns_per_ms);
+
+        printer.reset();
+
+        const newWinsize = try console.winSize();
+        if (winsize.cols != newWinsize.cols or winsize.rows != newWinsize.rows) {
+            state.requestReload();
+        }
+    }
+}
+
+fn runInputLoop(state: *RuntimeState) !void {
     const stdin = std.fs.File.stdin();
 
-    while (exit.load(AtomicOrder.acquire) == 0) {
+    while (!shouldExit(state)) {
         var buf: [1]u8 = undefined;
 
         const count = try stdin.read(&buf);
@@ -182,127 +187,35 @@ fn runInputLoop() !void {
 
         switch (buf[0]) {
             'p', 'P', console.SPACE => {
-                const now = std.time.milliTimestamp();
-                if (pause.load(AtomicOrder.acquire) == 0) {
-                    _ = pause_timestamp.store(now, AtomicOrder.release);
-                } else {
-                    const diff = now - pause_timestamp.raw;
-                    _ = start_timestamp.store(diff + start_timestamp.raw, AtomicOrder.release);
-                }
-
-                _ = pause.fetchXor(1, AtomicOrder.acq_rel);
+                state.togglePause();
             },
             '+' => {
-                const min = @min(1000 * 3, speed_ms.raw + 10);
-                _ = speed_ms.store(min, AtomicOrder.release);
-                _ = cond.signal();
+                const speed = state.speed_ms.load(.acquire);
+                const min = @min(3000, speed + 10);
+                state.setSpeed(min);
             },
             '-' => {
-                const max = speed_ms.raw -| 10;
-                _ = speed_ms.store(max, AtomicOrder.release);
-                _ = cond.signal();
+                const speed = state.speed_ms.load(.acquire);
+                const max = speed -| 10;
+                state.setSpeed(max);
             },
             'q', 'Q', console.CTRL_C => {
-                _ = exit.fetchXor(1, AtomicOrder.acq_rel);
-                _ = cond.signal();
+                state.requestExit();
             },
             else => {},
         }
     }
 }
 
-pub fn print_debug(
-    persistentAllocator: *AllocatorTracer,
-    scratchAllocator: *AllocatorTracer,
-    config: *const configuration.Configuration,
-    printer: *Printer,
-    mtrx: *matrix.LinearMatrix,
-) !void {
-    var scratch = scratchAllocator.allocator();
-
-    const cols = mtrx.cols_len();
-    const rows = mtrx.rows_len();
-    const fixedArea = rows * cols;
-
-    var end_ms = std.time.milliTimestamp();
-    if (pause.load(AtomicOrder.acquire) == 1) {
-        end_ms = pause_timestamp.raw;
-    }
-
-    const time = try utils.millisecondsToTime(scratch, end_ms - start_timestamp.raw, null);
-    defer scratch.free(time);
-
-    var paused = false;
-    if (pause.load(AtomicOrder.acquire) == 1) {
-        paused = true;
-    }
-
-    try printer.printf("{}: {s}\n", .{
-        build.name,
-        build.version,
-    });
-
-    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused {any} \n", .{
-        persistentAllocator.bytes(),
-        scratchAllocator.bytes(),
-        paused,
-    });
-
-    try printer.printf("Speed: {d}ms | Ascii Mode: {any} | Rain color: {any} | Matrix Mode: {any} | Formatter mode: {any}\n", .{
-        speed_ms.raw,
-        config.symbol_mode,
-        config.rainColor,
-        config.matrix_mode,
-        config.formatter.code(),
-    });
-
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d} | Time: {s} \n", .{
-        config.seed,
-        fixedArea,
-        cols,
-        rows,
-        config.drop_len,
-        time,
-    });
+fn onInterrupt(context: *anyopaque) void {
+    const state: *RuntimeState = @ptrCast(@alignCast(context));
+    state.requestExit();
 }
 
-pub fn print_controls(
-    printer: *Printer,
-) !void {
-    try printer.printf("\nPause: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
-        "p, space",
-        "+",
-        "-",
-        "q, ctrl+c",
-    });
+fn shouldExit(state: *const RuntimeState) bool {
+    return state.exit.load(.acquire);
 }
 
-pub fn defineSignalHandlers() !void {
-    if (builtin.os.tag == .windows) {
-        if (std.os.windows.kernel32.SetConsoleCtrlHandler(winCtrlHandler, 1) == 0) {
-            return error.FailedToSetCtrlHandler;
-        }
-        return;
-    }
-
-    const action = std.posix.Sigaction{
-        .handler = .{ .handler = unixSigintHandler },
-        .mask = undefined,
-        .flags = 0,
-    };
-
-    _ = std.posix.sigaction(std.posix.SIG.INT, &action, null);
-}
-
-fn winCtrlHandler(ctrl_type: std.os.windows.DWORD) callconv(.c) std.os.windows.BOOL {
-    _ = ctrl_type;
-    _ = exit.fetchXor(1, AtomicOrder.acq_rel);
-    _ = cond.signal();
-    return 1;
-}
-
-fn unixSigintHandler(sig_num: i32) callconv(.c) void {
-    _ = sig_num;
-    _ = exit.fetchXor(1, AtomicOrder.acq_rel);
-    _ = cond.signal();
+fn shouldReload(state: *const RuntimeState) bool {
+    return state.reload.load(.acquire);
 }
