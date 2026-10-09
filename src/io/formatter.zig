@@ -1,16 +1,16 @@
 const std = @import("std");
 
 pub const FormatterCode = enum {
-    ANSI,
-    RGB,
-    VOID,
+    ansi,
+    rgb,
+    none,
 };
 
 pub fn unionOf(f: FormatterCode) FormatterUnion {
     return switch (f) {
-        FormatterCode.ANSI => FormatterUnion{ .ansi = .{} },
-        FormatterCode.RGB => FormatterUnion{ .rgb = .{} },
-        FormatterCode.VOID => FormatterUnion{ .void = .{} },
+        FormatterCode.ansi => FormatterUnion{ .ansi = .{} },
+        FormatterCode.rgb => FormatterUnion{ .rgb = .{} },
+        FormatterCode.none => FormatterUnion{ .void = .{} },
     };
 }
 
@@ -119,7 +119,7 @@ fn Formatter(
 }
 
 pub const AnsiFormatter = Formatter(
-    FormatterCode.ANSI,
+    FormatterCode.ansi,
     struct { u8, []const u8 },
     24,
     "",
@@ -151,7 +151,7 @@ fn rgbToAnsi256(r: u8, g: u8, b: u8, c: []const u8) struct { u8, []const u8 } {
 }
 
 pub const RgbFormatter = Formatter(
-    FormatterCode.RGB,
+    FormatterCode.rgb,
     struct { u8, u8, u8, []const u8 },
     32,
     "",
@@ -165,7 +165,7 @@ fn rgbVoid(r: u8, g: u8, b: u8, c: []const u8) struct { u8, u8, u8, []const u8 }
 }
 
 pub const VoidFormatter = Formatter(
-    FormatterCode.VOID,
+    FormatterCode.none,
     struct { []const u8 },
     1,
     "",

@@ -7,9 +7,9 @@ const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
 const console = @import("../io/console.zig");
 const Printer = @import("../io/printer.zig").Printer;
 const LinearMatrixPrinter = @import("../io/matrix_printer.zig").LinearMatrixPrinter;
-const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 
-const symbol = @import("../domain/symbol.zig");
+const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
+const SymbolGenerator = @import("../domain/symbol.zig").SymbolGenerator;
 const color = @import("../domain/color.zig");
 
 pub const RenderContext = struct {
@@ -24,7 +24,7 @@ pub const RenderContext = struct {
         config: *const configuration.Configuration,
         printer: *Printer,
         lcg: *MiniLCG,
-        asciiGenerator: *symbol.SymbolGenerator,
+        asciiGenerator: *SymbolGenerator,
     ) !void {
         const space = calculatePadding(config);
         const isVertical = config.orientation == .vertical;

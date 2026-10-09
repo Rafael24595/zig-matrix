@@ -6,9 +6,9 @@ const AsciiGenerator = @import("symbol.zig").SymbolGenerator;
 const ColorScale = @import("color.zig").ColorScale;
 
 pub const Mode = enum {
-    Rain,
-    Wave,
-    Wall,
+    rain,
+    wave,
+    wall,
 };
 
 pub const Meta = struct {
@@ -24,7 +24,7 @@ pub const LinearMatrix = struct {
     ascii: *AsciiGenerator,
     scale: *ColorScale,
 
-    mode: Mode = Mode.Rain,
+    mode: Mode = Mode.rain,
 
     cols: usize = 0,
     rows: usize = 0,
@@ -53,9 +53,9 @@ pub const LinearMatrix = struct {
         const meta = self.meta.?;
 
         const delayMode: u8 = switch (self.mode) {
-            Mode.Rain => @intCast(rows),
-            Mode.Wave => @intCast(5),
-            Mode.Wall => 0,
+            Mode.rain => @intCast(rows),
+            Mode.wave => @intCast(5),
+            Mode.wall => 0,
         };
 
         for (0..self.cols) |x| {

@@ -61,6 +61,10 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    if (target.result.os.tag != .windows) {
+        exe.root_module.link_libc = true;
+    }
+
     const build_zig_zon = b.createModule(.{
         .root_source_file = b.path("build.zig.zon"),
         .target = target,
