@@ -3,15 +3,15 @@ const std = @import("std");
 const color = @import("root.zig").color;
 
 test "correct RGB values for known colors" {
-    try std.testing.expectEqual([3]u8{ 255, 0, 0 }, color.rgbOf(color.Color.Red));
-    try std.testing.expectEqual([3]u8{ 0, 255, 0 }, color.rgbOf(color.Color.Green));
-    try std.testing.expectEqual([3]u8{ 0, 0, 255 }, color.rgbOf(color.Color.Blue));
+    try std.testing.expectEqual([3]u8{ 255, 0, 0 }, color.rgbOf(color.Color.red));
+    try std.testing.expectEqual([3]u8{ 0, 255, 0 }, color.rgbOf(color.Color.green));
+    try std.testing.expectEqual([3]u8{ 0, 0, 255 }, color.rgbOf(color.Color.blue));
 }
 
 test "init creates map with correct length" {
     var allocator = std.testing.allocator;
     const base = [3]u8{ 128, 128, 128 };
-    var scale = try color.ColorScale.init(&allocator, 10, base, color.ThemeGradient.Linear);
+    var scale = try color.ColorScale.init(&allocator, 10, base, color.ThemeGradient.linear);
     defer scale.free();
 
     try std.testing.expectEqual(11, scale.len());
@@ -22,7 +22,7 @@ test "default mode generates a symmetric gradient" {
     const base = [3]u8{ 128, 64, 32 };
     const scale_size: usize = 6;
 
-    var scale = try color.ColorScale.init(&allocator, scale_size, base, color.ThemeGradient.Default);
+    var scale = try color.ColorScale.init(&allocator, scale_size, base, color.ThemeGradient.default);
     defer scale.free();
 
     const map = scale.map.?;
@@ -43,7 +43,7 @@ test "linear mode fades linearly towards black" {
     const base = [3]u8{ 200, 100, 50 };
     const scale_size: usize = 5;
 
-    var scale = try color.ColorScale.init(&allocator, scale_size, base, color.ThemeGradient.Linear);
+    var scale = try color.ColorScale.init(&allocator, scale_size, base, color.ThemeGradient.linear);
     defer scale.free();
 
     const map = scale.map.?;
@@ -60,7 +60,7 @@ test "circular mode rises then falls symmetrically" {
     const base = [3]u8{ 255, 128, 64 };
     const scale_size: usize = 6;
 
-    var scale = try color.ColorScale.init(&allocator, scale_size, base, color.ThemeGradient.Circular);
+    var scale = try color.ColorScale.init(&allocator, scale_size, base, color.ThemeGradient.circular);
     defer scale.free();
 
     const map = scale.map.?;
@@ -76,7 +76,7 @@ test "circular mode rises then falls symmetrically" {
 test "find and findUnsafe work correctly" {
     var allocator = std.testing.allocator;
     const base = [3]u8{ 100, 100, 100 };
-    var scale = try color.ColorScale.init(&allocator, 3, base, color.ThemeGradient.Linear);
+    var scale = try color.ColorScale.init(&allocator, 3, base, color.ThemeGradient.linear);
     defer scale.free();
 
     try std.testing.expect(scale.find(10) == null);
@@ -87,7 +87,7 @@ test "find and findUnsafe work correctly" {
 test "free releases memory and resets map" {
     var allocator = std.testing.allocator;
     const base = [3]u8{ 255, 255, 255 };
-    var scale = try color.ColorScale.init(&allocator, 5, base, color.ThemeGradient.Default);
+    var scale = try color.ColorScale.init(&allocator, 5, base, color.ThemeGradient.default);
 
     scale.free();
     try std.testing.expectEqual(@as(usize, 0), scale.len());

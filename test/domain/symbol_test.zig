@@ -5,7 +5,7 @@ const symbol = @import("root.zig").symbol;
 
 test "next uses table for Symbols mode" {
     var lcg = MiniLCG.init(1234);
-    var gen = symbol.SymbolGenerator.init(&lcg, symbol.Theme.Symbols);
+    var gen = symbol.SymbolGenerator.init(&lcg, symbol.Theme.symbols);
     const tbl = gen.meta.chars;
 
     for (0..100) |_| {
