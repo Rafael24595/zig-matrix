@@ -174,7 +174,11 @@ fn runInputLoop() !void {
 
     while (exit.load(AtomicOrder.acquire) == 0) {
         var buf: [1]u8 = undefined;
-        _ = try stdin.read(&buf);
+
+        const count = try stdin.read(&buf);
+        if (count == 0) {
+            continue;
+        }
 
         switch (buf[0]) {
             'p', 'P', console.SPACE => {
