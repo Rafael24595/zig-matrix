@@ -71,12 +71,12 @@ The `zig-matrix` program supports several command line options to customize the 
 | `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
 | `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
 | `-l` | Drop length | 0.4 × matrix height | Any unsigned integer |
-| `-tc` | Theme color | Green | White, Black, Red, Green, Blue, Yellow, Cyan, Magenta, Orange, Purple, Gray, Pink, Brown, Aqua, Navy, Teal, NeonPink, NeonGreen, NeonBlue, NeonYellow, NeonOrange, NeonPurple, NeonCyan, NeonRed |
-| `-tg` | Theme gradient | Default | Default, Linear, Circular |
-| `-ts` | Theme symbol | Default | Default, Binary, Latin, LatinUpper, LatinLower, Digits, Symbols, Hex, Base64, Blocks, Extended, Katana, Fade, Matrix, Code, SciFi, Runes, Math, Arcane, Telemetry, Cyrillic, CyrillicUpper, CyrillicLower, Greek, GreekUpper, GreekLower, Arabic, Devanagari |
-| `-mm` | Matrix mode | Rain | Rain, Wave, Wall |
-| `-cm` | Color mode | RGB | RGB, ANSI, VOID |
-| `-o` | Matrix orientation | Vertical | Vertical, Horizontal |
+| `-tc` | Theme color | green | white, black, red, green, blue, yellow, cyan, magenta, orange, purple, gray, pink, brown, aqua, navy, teal, neon_pink, neon_green, neon_blue, neon_yellow, neon_orange, neon_purple, neon_cyan, neon_red |
+| `-tg` | Theme gradient | default | default, linear, circular |
+| `-ts` | Theme symbol | default | default, binary, latin, latin_upper, latin_lower, digits, symbols, hex, base64, blocks, extended, katana, fade, matrix, code, sci_fi, runes, math, arcane, telemetry, cyrillic, cyrillic_upper, cyrillic_lower, greek, greek_upper, greek_lower, arabic, devanagari |
+| `-mm` | Matrix mode | rain | rain, wave, wall |
+| `-cm` | Color mode | rgb | rgb, ansi, none |
+| `-o` | Matrix orientation | vertical | vertical, horizontal |
 
 ---
 
@@ -103,31 +103,31 @@ zig-out/bin/zig-matrix -d
 ### Use a specific ASCII symbol set
 
 ```sh
-zig-out/bin/zig-matrix -ts Binary
+zig-out/bin/zig-matrix -ts binary
 ```
 
 ### Set a custom rain color
 
 ```sh
-zig-out/bin/zig-matrix -tc NeonBlue
+zig-out/bin/zig-matrix -tc neon_blue
 ```
 
 ### Set a custom rain gradient
 
 ```sh
-zig-out/bin/zig-matrix -tg Circular
+zig-out/bin/zig-matrix -tg circular
 ```
 
 ### Use a specific matrix mode
 
 ```sh
-zig-out/bin/zig-matrix -mm Wave
+zig-out/bin/zig-matrix -mm wave
 ```
 
 ### Render the matrix horizontally
 
 ```sh
-zig-out/bin/zig-matrix -o Horizontal
+zig-out/bin/zig-matrix -o horizontal
 ```
 
 ### Use ANSI color mode
@@ -139,7 +139,7 @@ zig-out/bin/zig-matrix -cm ANSI
 ### Combine multiple options
 
 ```sh
-zig-out/bin/zig-matrix -tc NeonGreen -tg Circular -ts Binary -mm Wave -o Horizontal
+zig-out/bin/zig-matrix -tc neon_green -tg circular -ts binary -mm wave -o horizontal
 ```
 
 ---

@@ -132,10 +132,10 @@ pub const Configuration = struct {
     drop_per: f32 = 0.4,
     drop_len: usize = 0,
 
-    rainColor: color.Color = .Green,
-    rain_mode: color.ThemeGradient = .Default,
-    symbol_mode: symbol.Theme = .Default,
-    matrix_mode: matrix.Mode = .Rain,
+    rainColor: color.Color = .green,
+    rain_mode: color.ThemeGradient = .default,
+    symbol_mode: symbol.Theme = .default,
+    matrix_mode: matrix.Mode = .rain,
 
     formatter: formatter.FormatterUnion = formatter.FormatterUnion{ .rgb = .{} },
 
