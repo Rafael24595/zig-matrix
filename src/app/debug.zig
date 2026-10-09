@@ -27,10 +27,11 @@ pub fn print_debug(
 
     var end_ms = std.time.milliTimestamp();
     if (state.pause.load(.acquire)) {
-        end_ms = state.pause_timestamp.raw;
+        end_ms = state.pause_timestamp.load(.acquire);
     }
 
-    const time = try utils.millisecondsToTime(scratch, end_ms - state.start_timestamp.raw, null);
+    const start_timestamp = state.start_timestamp.load(.acquire);
+    const time = try utils.millisecondsToTime(scratch, end_ms - start_timestamp, null);
     defer scratch.free(time);
 
     var paused = false;
@@ -50,7 +51,7 @@ pub fn print_debug(
     });
 
     try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any}\n", .{
-        state.speed_ms.raw,
+        state.speed_ms.load(.acquire),
         config.symbol_mode,
         config.rainColor,
         config.matrix_mode,
