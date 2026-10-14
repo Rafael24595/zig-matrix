@@ -79,13 +79,13 @@ pub const ColorScale = struct {
         for (0..scale + 1) |i| {
             switch (mode) {
                 ThemeGradient.default => {
-                    map[i] = self.scaleColorDefault(i, scale, base);
+                    map[i] = scaleColorDefault(i, scale, base);
                 },
                 ThemeGradient.circular => {
-                    map[i] = self.scaleColorCircular(i, scale, base);
+                    map[i] = scaleColorCircular(i, scale, base);
                 },
                 ThemeGradient.linear => {
-                    map[i] = self.scaleColorLinear(i, scale, base);
+                    map[i] = scaleColorLinear(i, scale, base);
                 },
             }
         }
@@ -124,7 +124,7 @@ pub const ColorScale = struct {
         }
     }
 
-    fn scaleColorCircular(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scaleColorCircular(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -150,7 +150,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn scaleColorLinear(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scaleColorLinear(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -170,7 +170,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn scaleColorDefault(self: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scaleColorDefault(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -178,13 +178,13 @@ pub const ColorScale = struct {
         const half = max / 2;
 
         if (index <= half) {
-            return self.upperColor(index, half, mid);
+            return upperColor(index, half, mid);
         }
 
-        return self.lowerColor(index - half, max - half, mid);
+        return scaleColorLinear(index - half, max - half, mid);
     }
 
-    fn lowerColor(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scaleColorLinear(index: usize, max: usize, mid: [3]u8) [3]u8 {
         const fi: f32 = @floatFromInt(index);
         const fh: f32 = @floatFromInt(max);
         const t = fi / fh;
@@ -200,7 +200,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn upperColor(_: *@This(), index: usize, half: usize, mid: [3]u8) [3]u8 {
+    inline fn upperColor(index: usize, half: usize, mid: [3]u8) [3]u8 {
         const fi: f32 = @floatFromInt(index);
         const fh: f32 = @floatFromInt(half);
         const t = fi / fh;
