@@ -6,7 +6,7 @@ pub const FormatterCode = enum {
     none,
 };
 
-pub fn unionOf(f: FormatterCode) FormatterUnion {
+pub fn union_of(f: FormatterCode) FormatterUnion {
     return switch (f) {
         FormatterCode.ansi => FormatterUnion{ .ansi = .{} },
         FormatterCode.rgb => FormatterUnion{ .rgb = .{} },
@@ -29,30 +29,24 @@ pub const FormatterUnion = union(enum) {
         };
     }
 
-    pub fn fmt_bytes(
-        self: *@This(),
-    ) usize {
-        return switch (self.*) {
+    pub fn fmt_bytes(self: @This()) usize {
+        return switch (self) {
             .ansi => |f| f.fmt_bytes(),
             .rgb => |f| f.fmt_bytes(),
             .void => |f| f.fmt_bytes(),
         };
     }
 
-    pub fn prefix(
-        self: *@This(),
-    ) []const u8 {
-        return switch (self.*) {
+    pub fn prefix(self: @This()) []const u8 {
+        return switch (self) {
             .ansi => |f| f.prefix(),
             .rgb => |f| f.prefix(),
             .void => |f| f.prefix(),
         };
     }
 
-    pub fn sufix(
-        self: *@This(),
-    ) []const u8 {
-        return switch (self.*) {
+    pub fn sufix(self: @This()) []const u8 {
+        return switch (self) {
             .ansi => |f| f.sufix(),
             .rgb => |f| f.sufix(),
             .void => |f| f.sufix(),
@@ -176,4 +170,63 @@ pub const VoidFormatter = Formatter(
 
 fn unformatted(_: u8, _: u8, _: u8, c: []const u8) struct { []const u8 } {
     return .{c};
+}
+
+test "Formatter with u8 adapter (ANSI 256)" {
+    var f = AnsiFormatter{};
+
+    const allocator = std.testing.allocator;
+
+    const buf = try allocator.alloc(u8, f.fmt_bytes());
+    defer allocator.free(buf);
+
+    const out = try f.format(buf, 255, 0, 0, "X");
+
+    try std.testing.expectEqualStrings(
+        "\x1b[38;5;196mX",
+        out,
+    );
+}
+
+test "Formatter with Rgb adapter (RGB)" {
+    var f = RgbFormatter{};
+
+    const allocator = std.testing.allocator;
+
+    const buf = try allocator.alloc(u8, f.fmt_bytes());
+    defer allocator.free(buf);
+
+    const out = try f.format(buf, 255, 0, 144, "X");
+
+    try std.testing.expectEqualStrings(
+        "\x1b[38;2;255;0;144mX",
+        out,
+    );
+}
+
+test "FormatterUnion with ANSI and RGB adapter" {
+    var f = FormatterUnion{ .rgb = .{} };
+
+    const allocator = std.testing.allocator;
+
+    var buf = try allocator.alloc(u8, f.fmt_bytes());
+
+    var out = try f.format(buf, 255, 0, 144, "X");
+    try std.testing.expectEqualStrings(
+        "\x1b[38;2;255;0;144mX",
+        out,
+    );
+
+    allocator.free(buf);
+
+    buf = try allocator.alloc(u8, f.fmt_bytes());
+
+    f = FormatterUnion{ .ansi = .{} };
+    out = try f.format(buf, 255, 0, 0, "X");
+    try std.testing.expectEqualStrings(
+        "\x1b[38;5;196mX",
+        out,
+    );
+
+    allocator.free(buf);
 }

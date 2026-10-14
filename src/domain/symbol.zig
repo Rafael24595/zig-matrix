@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
+const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
 
 pub const Theme = enum {
     default,
@@ -349,7 +349,26 @@ pub const SymbolGenerator = struct {
 
     pub fn next(self: *@This()) []const u8 {
         const chars = self.meta.chars;
-        const idx = self.lcg.randInRange(0, @intCast(chars.len - 1));
+        const idx = self.lcg.rand_in_range(0, @intCast(chars.len - 1));
         return chars[idx];
     }
 };
+
+test "next uses table for Symbols mode" {
+    var lcg = MiniLCG.init(1234);
+    var gen = SymbolGenerator.init(&lcg, Theme.symbols);
+    const tbl = gen.meta.chars;
+
+    for (0..100) |_| {
+        const ch = gen.next();
+        var found = false;
+        for (tbl) |tch| {
+            if (std.mem.eql(u8, ch, tch)) {
+                found = true;
+                break;
+            }
+        }
+        try std.testing.expect(found);
+    }
+}
+

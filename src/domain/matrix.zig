@@ -1,6 +1,8 @@
 const std = @import("std");
 
-const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
+const terminal_kit = @import("terminal_kit");
+
+const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 
 const AsciiGenerator = @import("symbol.zig").SymbolGenerator;
 const ColorScale = @import("color.zig").ColorScale;
@@ -59,7 +61,7 @@ pub const LinearMatrix = struct {
         };
 
         for (0..self.cols) |x| {
-            const delay = self.lcg.randInRange(0, delayMode);
+            const delay = self.lcg.rand_in_range(0, delayMode);
 
             meta[x].cursor = 0;
             meta[x].loop = 0;

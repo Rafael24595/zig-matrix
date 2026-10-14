@@ -54,7 +54,7 @@ const ColorMap = [_][3]u8{
     .{ 255, 16, 83 }, // NeonRed
 };
 
-pub fn rgbOf(c: Color) [3]u8 {
+pub fn rgb_of(c: Color) [3]u8 {
     return ColorMap[@intFromEnum(c)];
 }
 
@@ -79,13 +79,13 @@ pub const ColorScale = struct {
         for (0..scale + 1) |i| {
             switch (mode) {
                 ThemeGradient.default => {
-                    map[i] = self.scaleColorDefault(i, scale, base);
+                    map[i] = scale_color_default(i, scale, base);
                 },
                 ThemeGradient.circular => {
-                    map[i] = self.scaleColorCircular(i, scale, base);
+                    map[i] = scale_color_circular(i, scale, base);
                 },
                 ThemeGradient.linear => {
-                    map[i] = self.scaleColorLinear(i, scale, base);
+                    map[i] = scale_color_linear(i, scale, base);
                 },
             }
         }
@@ -98,10 +98,10 @@ pub const ColorScale = struct {
             return null;
         }
 
-        return self.findUnsafe(index);
+        return self.find_unsafe(index);
     }
 
-    pub inline fn findUnsafe(self: *@This(), index: usize) ?[3]u8 {
+    pub inline fn find_unsafe(self: @This(), index: usize) ?[3]u8 {
         if (index >= self.map.?.len) {
             return null;
         }
@@ -124,7 +124,7 @@ pub const ColorScale = struct {
         }
     }
 
-    fn scaleColorCircular(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scale_color_circular(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -150,7 +150,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn scaleColorLinear(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scale_color_linear(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -170,7 +170,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn scaleColorDefault(self: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scale_color_default(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -178,13 +178,13 @@ pub const ColorScale = struct {
         const half = max / 2;
 
         if (index <= half) {
-            return self.upperColor(index, half, mid);
+            return upper_color(index, half, mid);
         }
 
-        return self.lowerColor(index - half, max - half, mid);
+        return lower_color(index - half, max - half, mid);
     }
 
-    fn lowerColor(_: *@This(), index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn lower_color(index: usize, max: usize, mid: [3]u8) [3]u8 {
         const fi: f32 = @floatFromInt(index);
         const fh: f32 = @floatFromInt(max);
         const t = fi / fh;
@@ -200,7 +200,7 @@ pub const ColorScale = struct {
         };
     }
 
-    fn upperColor(_: *@This(), index: usize, half: usize, mid: [3]u8) [3]u8 {
+    inline fn upper_color(index: usize, half: usize, mid: [3]u8) [3]u8 {
         const fi: f32 = @floatFromInt(index);
         const fh: f32 = @floatFromInt(half);
         const t = fi / fh;
@@ -216,11 +216,103 @@ pub const ColorScale = struct {
         };
     }
 
-    fn clamp(color: f32) u8 {
+    inline fn clamp(color: f32) u8 {
         return @intFromFloat(@round(std.math.clamp(color, 0.0, 255.0)));
     }
 
-    fn lerp(a: f32, b: f32, t: f32) f32 {
+    inline fn lerp(a: f32, b: f32, t: f32) f32 {
         return a + (b - a) * t;
     }
 };
+
+test "correct RGB values for known colors" {
+    try std.testing.expectEqual([3]u8{ 255, 0, 0 }, rgb_of(Color.red));
+    try std.testing.expectEqual([3]u8{ 0, 255, 0 }, rgb_of(Color.green));
+    try std.testing.expectEqual([3]u8{ 0, 0, 255 }, rgb_of(Color.blue));
+}
+
+test "init creates map with correct length" {
+    var allocator = std.testing.allocator;
+    const base = [3]u8{ 128, 128, 128 };
+    var scale = try ColorScale.init(&allocator, 10, base, ThemeGradient.linear);
+    defer scale.free();
+
+    try std.testing.expectEqual(11, scale.len());
+}
+
+test "default mode generates a symmetric gradient" {
+    var allocator = std.testing.allocator;
+    const base = [3]u8{ 128, 64, 32 };
+    const scale_size: usize = 6;
+
+    var scale = try ColorScale.init(&allocator, scale_size, base, ThemeGradient.default);
+    defer scale.free();
+
+    const map = scale.map.?;
+
+    const mid = scale_size / 2;
+
+    try std.testing.expect(map[0][0] > map[mid][0]);
+    try std.testing.expect(map[0][1] > map[mid][1]);
+    try std.testing.expect(map[0][2] > map[mid][2]);
+
+    try std.testing.expect(map[scale_size][0] < map[mid][0]);
+    try std.testing.expect(map[scale_size][1] < map[mid][1]);
+    try std.testing.expect(map[scale_size][2] < map[mid][2]);
+}
+
+test "linear mode fades linearly towards black" {
+    var allocator = std.testing.allocator;
+    const base = [3]u8{ 200, 100, 50 };
+    const scale_size: usize = 5;
+
+    var scale = try ColorScale.init(&allocator, scale_size, base, ThemeGradient.linear);
+    defer scale.free();
+
+    const map = scale.map.?;
+
+    try std.testing.expect(map[0][0] > map[1][0]);
+    try std.testing.expect(map[1][0] > map[2][0]);
+    try std.testing.expect(map[2][0] > map[3][0]);
+    try std.testing.expect(map[3][0] > map[4][0]);
+    try std.testing.expect(map[4][0] > map[5][0]);
+}
+
+test "circular mode rises then falls symmetrically" {
+    var allocator = std.testing.allocator;
+    const base = [3]u8{ 255, 128, 64 };
+    const scale_size: usize = 6;
+
+    var scale = try ColorScale.init(&allocator, scale_size, base, ThemeGradient.circular);
+    defer scale.free();
+
+    const map = scale.map.?;
+
+    const left = map[1][0];
+    const mid = map[scale_size / 2][0];
+    const right = map[scale_size][0];
+
+    try std.testing.expect(left < mid);
+    try std.testing.expect(mid > right);
+}
+
+test "find and findUnsafe work correctly" {
+    var allocator = std.testing.allocator;
+    const base = [3]u8{ 100, 100, 100 };
+    var scale = try ColorScale.init(&allocator, 3, base, ThemeGradient.linear);
+    defer scale.free();
+
+    try std.testing.expect(scale.find(10) == null);
+    try std.testing.expect(scale.findUnsafe(10) == null);
+    try std.testing.expect(scale.find(1) != null);
+}
+
+test "free releases memory and resets map" {
+    var allocator = std.testing.allocator;
+    const base = [3]u8{ 255, 255, 255 };
+    var scale = try ColorScale.init(&allocator, 5, base, ThemeGradient.default);
+
+    scale.free();
+    try std.testing.expectEqual(@as(usize, 0), scale.len());
+}
+

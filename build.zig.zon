@@ -1,9 +1,14 @@
 .{
     .name = .zig_matrix,
-    .version = "0.7.1",
+    .version = "0.8.0",
     .fingerprint = 0xb4639a481dce360e,
     .minimum_zig_version = "0.15.1",
-    .dependencies = .{},
+    .dependencies = .{
+        .terminal_kit = .{
+            .url = "https://github.com/Rafael24595/zig-terminal-kit/releases/download/0.4.0/zig_terminal_kit-0.4.0.tar.gz",
+            .hash = "zig_terminal_kit-0.4.0-MaGLjufVAADyvJrUvpvMFC5cYuFm_mI7gufbBS2vsoks",
+        },
+    },
     .paths = .{
         "build.zig",
         "build.zig.zon",

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Printer = @import("printer.zig").Printer;
+const Printer = @import("terminal_kit").printer.Printer;
 
 const ColorScale = @import("../domain/color.zig").ColorScale;
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
@@ -15,20 +15,44 @@ pub const LinearMatrixPrinter = struct {
     formatter: Formatter,
     vertical: bool,
 
+    buffer: std.ArrayList(u8),
+    format: []u8,
+
     pub fn init(
         allocator: *std.mem.Allocator,
         printer: *Printer,
         formatter: Formatter,
         scale: *ColorScale,
+        matrix: *LinearMatrix,
         vertical: bool,
-    ) @This() {
+    ) !@This() {
+        const rows = matrix.rows_len();
+        const cols = matrix.cols_len();
+
+        const prefix = formatter.prefix();
+        const sufix = formatter.sufix();
+
+        const char_fmt_len = formatter.fmt_bytes() + matrix.max_char_bytes();
+        const mtrx_fmt_len = rows * cols * char_fmt_len;
+        const estimatedSize = prefix.len + mtrx_fmt_len + sufix.len;
+
+        const buffer = try std.ArrayList(u8).initCapacity(allocator.*, estimatedSize);
+        const format_buf = try allocator.alloc(u8, formatter.fmt_bytes());
+
         return .{
             .allocator = allocator,
             .printer = printer,
             .scale = scale,
             .formatter = formatter,
             .vertical = vertical,
+            .buffer = buffer,
+            .format = format_buf,
         };
+    }
+
+    pub fn free(self: *@This()) void {
+        self.buffer.deinit(self.allocator.*);
+        self.allocator.free(self.format);
     }
 
     // TODO: Refactor after checking the performance impact.
@@ -37,49 +61,37 @@ pub const LinearMatrixPrinter = struct {
             return;
         }
 
-        const rows = mtrx.rows_len();
-        const cols = mtrx.cols_len();
+        self.buffer.clearRetainingCapacity();
 
         const prefix = self.formatter.prefix();
         const sufix = self.formatter.sufix();
 
-        const char_fmt_len = self.formatter.fmt_bytes() + mtrx.max_char_bytes();
-        const mtrx_fmt_len = rows * cols * char_fmt_len;
-        const estimatedSize = prefix.len + mtrx_fmt_len + sufix.len;
-
-        var buffer = try std.ArrayList(u8).initCapacity(self.allocator.*, estimatedSize);
-        defer buffer.deinit(self.allocator.*);
-
         if (prefix.len > 0) {
-            try buffer.appendSlice(self.allocator.*, prefix);
+            try self.buffer.appendSlice(self.allocator.*, prefix);
         }
 
         if (self.vertical) {
-            try self.printVertical(mtrx, &buffer);
+            try self.print_vertical(mtrx);
         } else {
-            try self.printHorizontal(mtrx, &buffer);
+            try self.print_horizontal(mtrx);
         }
 
         if (sufix.len > 0) {
-            try buffer.appendSlice(self.allocator.*, sufix);
+            try self.buffer.appendSlice(self.allocator.*, sufix);
         }
 
-        try self.printer.print(buffer.items);
+        try self.printer.print(self.buffer.items);
     }
 
-    pub fn printVertical(
+    inline fn print_vertical(
         self: *@This(),
         mtrx: *LinearMatrix,
-        buffer: *std.ArrayList(u8),
     ) !void {
         const matrix = mtrx.vector().?;
         const metadata = mtrx.metadata().?;
 
         const rows = mtrx.rows_len();
         const cols = mtrx.cols_len();
-
-        const format = try self.allocator.alloc(u8, self.formatter.fmt_bytes());
-        defer self.allocator.free(format);
 
         for (0..rows) |x| {
             const col_start = x * cols;
@@ -87,28 +99,25 @@ pub const LinearMatrixPrinter = struct {
             for (0..cols) |y| {
                 const meta = metadata[y];
 
-                try self.printCell(
+                try self.print_cell(
                     matrix,
                     meta,
                     rows,
                     col_start,
-                    buffer,
-                    format,
                     x,
                     y,
                 );
             }
 
             if (x < rows - 1) {
-                try buffer.append(self.allocator.*, '\n');
+                try self.buffer.append(self.allocator.*, '\n');
             }
         }
     }
 
-    pub fn printHorizontal(
+    inline fn print_horizontal(
         self: *@This(),
         mtrx: *LinearMatrix,
-        buffer: *std.ArrayList(u8),
     ) !void {
         const matrix = mtrx.vector().?;
         const metadata = mtrx.metadata().?;
@@ -116,70 +125,63 @@ pub const LinearMatrixPrinter = struct {
         const rows = mtrx.rows_len();
         const cols = mtrx.cols_len();
 
-        const format = try self.allocator.alloc(u8, self.formatter.fmt_bytes());
-        defer self.allocator.free(format);
-
         for (0..cols) |y| {
             const meta = metadata[y];
 
             for (0..rows) |x| {
                 const col_start = x * cols;
 
-                try self.printCell(
+                try self.print_cell(
                     matrix,
                     meta,
                     rows,
                     col_start,
-                    buffer,
-                    format,
                     x,
                     y,
                 );
             }
 
             if (y < cols - 1) {
-                try buffer.append(self.allocator.*, '\n');
+                try self.buffer.append(self.allocator.*, '\n');
             }
         }
     }
 
-    inline fn printCell(
+    inline fn print_cell(
         self: *@This(),
         matrix: [][]const u8,
         meta: Meta,
         rows: usize,
         col_start: usize,
-        buffer: *std.ArrayList(u8),
-        format: []u8,
         x: usize,
         y: usize,
     ) !void {
         if (meta.delay > 0) {
-            try buffer.append(self.allocator.*, ' ');
+            try self.buffer.append(self.allocator.*, ' ');
             return;
         }
 
         const cursor = meta.cursor;
         if (meta.loop == 0 and cursor < x) {
-            try buffer.append(self.allocator.*, ' ');
+            try self.buffer.append(self.allocator.*, ' ');
             return;
         }
 
         const scaleIndex = (rows + cursor - x) % rows;
 
-        const color = self.scale.findUnsafe(scaleIndex) orelse {
-            try buffer.append(self.allocator.*, ' ');
+        const color = self.scale.find_unsafe(scaleIndex) orelse {
+            try self.buffer.append(self.allocator.*, ' ');
             return;
         };
 
         const formatted = try self.formatter.format(
-            format,
+            self.format,
             color[0],
             color[1],
             color[2],
             matrix[col_start + y],
         );
 
-        try buffer.appendSlice(self.allocator.*, formatted);
+        try self.buffer.appendSlice(self.allocator.*, formatted);
     }
 };
