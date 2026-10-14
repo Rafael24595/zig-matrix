@@ -2,10 +2,13 @@ const std = @import("std");
 
 const configuration = @import("../configuration/configuration.zig");
 
-const MiniLCG = @import("../commons/mini_lcg.zig").MiniLCG;
+const terminal_kit = @import("terminal_kit");
 
-const console = @import("../io/console.zig");
-const Printer = @import("../io/printer.zig").Printer;
+const console = terminal_kit.console;
+const Printer = terminal_kit.printer.Printer;
+
+const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+
 const LinearMatrixPrinter = @import("../io/matrix_printer.zig").LinearMatrixPrinter;
 
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;

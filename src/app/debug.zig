@@ -2,14 +2,17 @@ const std = @import("std");
 
 const build = @import("build.zig.zon");
 
-const utils = @import("../commons/utils.zig");
-const AllocatorTracer = @import("../commons/allocator.zig").AllocatorTracer;
+const terminal_kit = @import("terminal_kit");
 
-const RuntimeState = @import("./runtime_state.zig").RuntimeState;
+const utils = terminal_kit.utils;
+
+const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
+const RuntimeState = terminal_kit.runtime_state.RuntimeState;
+const Printer = terminal_kit.printer.Printer;
+
 const configuration = @import("../configuration/configuration.zig");
 
-const Printer = @import("../io/printer.zig").Printer;
-const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
+const RenderContext = @import("./render_context.zig").RenderContext;
 
 pub fn print_debug(
     state: *RuntimeState,
@@ -33,7 +36,7 @@ pub fn print_debug(
     }
 
     const start_timestamp = state.start_timestamp.load(.acquire);
-    const time = try utils.millisecondsToTime(scratch, end_ms - start_timestamp, null);
+    const time = try utils.milliseconds_to_time(scratch, end_ms - start_timestamp, null);
     defer scratch.free(time);
 
     var paused = false;

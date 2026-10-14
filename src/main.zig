@@ -2,28 +2,30 @@ const std = @import("std");
 
 const configuration = @import("configuration/configuration.zig");
 
+const terminal_kit = @import("terminal_kit");
+
+const signals = terminal_kit.signals;
+const console = terminal_kit.console;
+const Printer = terminal_kit.printer.Printer;
+
+const RuntimeState = terminal_kit.runtime_state.RuntimeState;
+const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
+const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+
 const debug = @import("app/debug.zig");
 const RenderContext = @import("app/render_context.zig").RenderContext;
-const RuntimeState = @import("app/runtime_state.zig").RuntimeState;
-const signals = @import("app/signals.zig");
-
-const AllocatorTracer = @import("commons/allocator.zig").AllocatorTracer;
-const MiniLCG = @import("commons/mini_lcg.zig").MiniLCG;
-
-const console = @import("io/console.zig");
-const Printer = @import("io/printer.zig").Printer;
 
 const SymbolGenerator = @import("domain/symbol.zig").SymbolGenerator;
 
 pub fn main() !void {
-    var basePersistentAllocator = std.heap.page_allocator;
-    var persistentAllocator = AllocatorTracer.init(&basePersistentAllocator);
+    const basePersistentAllocator = std.heap.page_allocator;
+    var persistentAllocator = AllocatorTracer.init(basePersistentAllocator);
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
-    var baseScratchAllocator = gpa.allocator();
-    var scratchAllocator = AllocatorTracer.init(&baseScratchAllocator);
+    const baseScratchAllocator = gpa.allocator();
+    var scratchAllocator = AllocatorTracer.init(baseScratchAllocator);
 
     var arena = std.heap.ArenaAllocator.init(scratchAllocator.allocator());
     defer arena.deinit();
@@ -45,12 +47,12 @@ pub fn main() !void {
     state.start_timestamp.store(config.start_ms, .release);
     state.speed_ms.store(config.milliseconds, .release);
 
-    try console.enableANSI();
-    try console.enableUTF8();
+    try console.enable_ansi();
+    try console.enable_utf8();
 
-    try console.enableRawMode();
+    try console.enable_raw_mode();
 
-    defer console.disableRawMode();
+    defer console.disable_raw_mode();
 
     try run(
         &state,
@@ -69,6 +71,12 @@ inline fn run(
     printer: *Printer,
 ) !void {
     try signals.install(state, onInterrupt);
+
+    defer {
+        signals.uninstall() catch |err| {
+            std.debug.print("Failed to uninstall signals: {}\n", .{err});
+        };
+    }
 
     var allocator = persistentAllocator.allocator();
 
@@ -94,7 +102,7 @@ inline fn run(
     defer input_thread.join();
 
     while (!shouldExit(state)) {
-        _ = state.consumeReload();
+        _ = state.consume_reload();
 
         try runRenderCycle(
             &allocator,
@@ -121,7 +129,7 @@ inline fn runRenderCycle(
     lcg: *MiniLCG,
     asciiGenerator: *SymbolGenerator,
 ) !void {
-    const winsize = try console.winSize();
+    const winsize = try console.winsize();
 
     var context: RenderContext = undefined;
 
@@ -163,13 +171,13 @@ inline fn runRenderCycle(
         }
 
         const speed = state.speed_ms.load(.acquire);
-        try state.waitForFrame(speed * std.time.ns_per_ms);
+        try state.wait_for_frame(speed * std.time.ns_per_ms);
 
         printer.reset();
 
-        const newWinsize = try console.winSize();
+        const newWinsize = try console.winsize();
         if (winsize.cols != newWinsize.cols or winsize.rows != newWinsize.rows) {
-            state.requestReload();
+            state.request_reload();
         }
 
         context.frame_increment();
@@ -189,20 +197,20 @@ fn runInputLoop(state: *RuntimeState) !void {
 
         switch (buf[0]) {
             'p', 'P', console.SPACE => {
-                state.togglePause();
+                state.toggle_pause();
             },
             '+' => {
                 const speed = state.speed_ms.load(.acquire);
                 const min = @min(3000, speed + 10);
-                state.setSpeed(min);
+                state.set_speed(min);
             },
             '-' => {
                 const speed = state.speed_ms.load(.acquire);
                 const max = speed -| 10;
-                state.setSpeed(max);
+                state.set_speed(max);
             },
             'q', 'Q', console.CTRL_C => {
-                state.requestExit();
+                state.request_exit();
             },
             else => {},
         }
@@ -211,7 +219,7 @@ fn runInputLoop(state: *RuntimeState) !void {
 
 fn onInterrupt(context: *anyopaque) void {
     const state: *RuntimeState = @ptrCast(@alignCast(context));
-    state.requestExit();
+    state.request_exit();
 }
 
 fn shouldExit(state: *const RuntimeState) bool {

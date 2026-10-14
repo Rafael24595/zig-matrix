@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Printer = @import("printer.zig").Printer;
+const Printer = @import("terminal_kit").printer.Printer;
 
 const ColorScale = @import("../domain/color.zig").ColorScale;
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;

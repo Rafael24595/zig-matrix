@@ -27,6 +27,13 @@ pub fn build(b: *std.Build) void {
 
     exe.root_module.addImport("build.zig.zon", build_zig_zon);
 
+    const terminal_kit_dep = b.dependency("terminal_kit", .{});
+
+    exe.root_module.addImport(
+        "terminal_kit",
+        terminal_kit_dep.module("zig_terminal_kit"),
+    );
+
     b.installArtifact(exe);
 
     const run_step = b.step("run", "Run the app");
@@ -46,24 +53,6 @@ pub fn build(b: *std.Build) void {
 
     const run_exe_tests = b.addRunArtifact(exe_tests);
 
-    const test_module = b.createModule(.{
-        .root_source_file = b.path("test/main_test.zig"),
-        .imports = &.{
-            .{ .name = "root.zig", .module = root_module },
-        },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    test_module.addIncludePath(b.path("src"));
-
-    const standalone_tests = b.addTest(.{
-        .root_module = test_module,
-    });
-
-    const run_standalone_tests = b.addRunArtifact(standalone_tests);
-
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_exe_tests.step);
-    test_step.dependOn(&run_standalone_tests.step);
 }
