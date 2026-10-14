@@ -353,3 +353,22 @@ pub const SymbolGenerator = struct {
         return chars[idx];
     }
 };
+
+test "next uses table for Symbols mode" {
+    var lcg = MiniLCG.init(1234);
+    var gen = SymbolGenerator.init(&lcg, Theme.symbols);
+    const tbl = gen.meta.chars;
+
+    for (0..100) |_| {
+        const ch = gen.next();
+        var found = false;
+        for (tbl) |tch| {
+            if (std.mem.eql(u8, ch, tch)) {
+                found = true;
+                break;
+            }
+        }
+        try std.testing.expect(found);
+    }
+}
+
