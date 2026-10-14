@@ -148,7 +148,7 @@ inline fn runRenderCycle(
                 scratchAllocator,
                 config,
                 printer,
-                &context.matrix,
+                &context,
             );
         }
 
@@ -171,6 +171,8 @@ inline fn runRenderCycle(
         if (winsize.cols != newWinsize.cols or winsize.rows != newWinsize.rows) {
             state.requestReload();
         }
+
+        context.frame_increment();
     }
 }
 

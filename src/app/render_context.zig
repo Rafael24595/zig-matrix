@@ -15,7 +15,10 @@ const color = @import("../domain/color.zig");
 pub const RenderContext = struct {
     scale: color.ColorScale,
     matrixPrinter: LinearMatrixPrinter,
-    matrix: LinearMatrix,
+
+    last_time: i64,
+    last_stable: u16,
+    frames: u64,
 
     pub fn init(
         self: *@This(),
@@ -69,11 +72,43 @@ pub const RenderContext = struct {
         errdefer self.matrix.free();
 
         try self.matrix.build(cols, rows);
+
+        self.last_time = 0;
+        self.last_stable = 0;
+        self.frames = 0;
     }
 
     pub fn deinit(self: *RenderContext) void {
         self.matrix.free();
         self.scale.free();
+    }
+
+    pub fn frame_increment(self: *@This()) void {
+        self.frames = self.frames +| 1;
+    }
+
+    pub fn frame_per(self: *@This(), interval: i64) u16 {
+        const current_time = std.time.milliTimestamp();
+
+        if (self.last_time == 0) {
+            self.last_time = current_time;
+            return self.last_stable;
+        }
+
+        const elapsed = current_time - self.last_time;
+        if (elapsed < interval) {
+            return self.last_stable;
+        }
+
+        if (elapsed > 0) {
+            const fps = (self.frames * 1000) / @as(u64, @intCast(elapsed));
+            self.last_stable = @intCast(@min(fps, 65535));
+        }
+
+        self.last_time = current_time;
+        self.frames = 0;
+
+        return self.last_stable;
     }
 };
 

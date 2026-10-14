@@ -17,9 +17,11 @@ pub fn print_debug(
     scratchAllocator: *AllocatorTracer,
     config: *const configuration.Configuration,
     printer: *Printer,
-    matrix: *LinearMatrix,
+    context: *RenderContext,
 ) !void {
     var scratch = scratchAllocator.allocator();
+
+    var matrix = context.matrix;
 
     const cols = matrix.cols_len();
     const rows = matrix.rows_len();
@@ -44,10 +46,11 @@ pub fn print_debug(
         build.version,
     });
 
-    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused {any} \n", .{
+    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused: {any} | FPS: {d} \n", .{
         persistentAllocator.bytes(),
         scratchAllocator.bytes(),
         paused,
+        context.frame_per(std.time.ms_per_s),
     });
 
     try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any}\n", .{
