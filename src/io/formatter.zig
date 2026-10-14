@@ -29,30 +29,24 @@ pub const FormatterUnion = union(enum) {
         };
     }
 
-    pub fn fmt_bytes(
-        self: *@This(),
-    ) usize {
-        return switch (self.*) {
+    pub fn fmt_bytes(self: @This()) usize {
+        return switch (self) {
             .ansi => |f| f.fmt_bytes(),
             .rgb => |f| f.fmt_bytes(),
             .void => |f| f.fmt_bytes(),
         };
     }
 
-    pub fn prefix(
-        self: *@This(),
-    ) []const u8 {
-        return switch (self.*) {
+    pub fn prefix(self: @This()) []const u8 {
+        return switch (self) {
             .ansi => |f| f.prefix(),
             .rgb => |f| f.prefix(),
             .void => |f| f.prefix(),
         };
     }
 
-    pub fn sufix(
-        self: *@This(),
-    ) []const u8 {
-        return switch (self.*) {
+    pub fn sufix(self: @This()) []const u8 {
+        return switch (self) {
             .ansi => |f| f.sufix(),
             .rgb => |f| f.sufix(),
             .void => |f| f.sufix(),
