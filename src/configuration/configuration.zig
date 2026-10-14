@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const build = @import("build.zig.zon");
 
@@ -21,6 +22,11 @@ const Flag = struct {
     desc: []const u8,
     name: []const u8,
     aux_desc: ?[]const u8 = null,
+};
+
+const frame_pause_ms: u64 = switch (builtin.os.tag) {
+    .windows => 55,
+    else => 65,
 };
 
 const FLAG_HELP: Flag = Flag{
@@ -127,7 +133,7 @@ pub const Configuration = struct {
 
     start_ms: i64 = 0,
 
-    milliseconds: u64 = 65,
+    milliseconds: u64 = frame_pause_ms,
 
     drop_per: f32 = 0.4,
     drop_len: usize = 0,
