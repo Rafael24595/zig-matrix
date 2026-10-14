@@ -14,6 +14,7 @@ const color = @import("../domain/color.zig");
 
 pub const RenderContext = struct {
     scale: color.ColorScale,
+    matrix: LinearMatrix,
     matrixPrinter: LinearMatrixPrinter,
 
     last_time: i64,
@@ -53,14 +54,6 @@ pub const RenderContext = struct {
 
         errdefer self.scale.free();
 
-        self.matrixPrinter = LinearMatrixPrinter.init(
-            allocator,
-            printer,
-            config.formatter,
-            &self.scale,
-            isVertical,
-        );
-
         self.matrix = LinearMatrix.init(
             allocator,
             lcg,
@@ -71,6 +64,17 @@ pub const RenderContext = struct {
 
         errdefer self.matrix.free();
 
+        self.matrixPrinter = try LinearMatrixPrinter.init(
+            allocator,
+            printer,
+            config.formatter,
+            &self.scale,
+            &self.matrix,
+            isVertical,
+        );
+
+        errdefer self.matrixPrinter.free();
+
         try self.matrix.build(cols, rows);
 
         self.last_time = 0;
@@ -78,8 +82,9 @@ pub const RenderContext = struct {
         self.frames = 0;
     }
 
-    pub fn deinit(self: *RenderContext) void {
+    pub fn deinit(self: *@This()) void {
         self.matrix.free();
+        self.matrixPrinter.free();
         self.scale.free();
     }
 
