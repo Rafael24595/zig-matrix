@@ -220,7 +220,7 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, FLAG_COLOR_MODE.flag_short)) {
                 const code = try config.parseEnum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
-                config.formatter = formatter.unionOf(code);
+                config.formatter = formatter.union_of(code);
                 i += 1;
                 continue;
             }
@@ -246,13 +246,21 @@ pub const Configuration = struct {
         return config;
     }
 
-    pub fn print_help(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) !void {
+    inline fn print_help(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        config: Configuration,
+    ) !void {
         const message = try format_flags(allocator, printer, config);
         defer allocator.free(message);
         try printer.print(message);
     }
 
-    pub fn format_flags(allocator: std.mem.Allocator, printer: *Printer, config: Configuration) ![]u8 {
+    inline fn format_flags(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        config: Configuration,
+    ) ![]u8 {
         var buffer = try std.ArrayList(u8).initCapacity(allocator, 0);
 
         const drop_default = try printer.format(
@@ -449,7 +457,7 @@ pub const Configuration = struct {
     }
 };
 
-pub fn fromArgs(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
+pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
     return Configuration.init(allocator, printer, args);

@@ -35,7 +35,7 @@ pub fn main() !void {
 
     defer printer.reset();
 
-    const config = try configuration.fromArgs(
+    const config = try configuration.from_args(
         persistentAllocator.allocator(),
         &printer,
     );

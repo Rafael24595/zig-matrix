@@ -30,7 +30,7 @@ pub const RenderContext = struct {
         lcg: *MiniLCG,
         asciiGenerator: *SymbolGenerator,
     ) !void {
-        const space = calculatePadding(config);
+        const space = calculate_padding(config);
         const isVertical = config.orientation == .vertical;
 
         const cols = if (isVertical)
@@ -43,12 +43,12 @@ pub const RenderContext = struct {
         else
             winsize.cols;
 
-        const drop: usize = calculateDropLenght(config, rows);
+        const drop = calculate_drop_lenght(config, rows);
 
         self.scale = try color.ColorScale.init(
             allocator,
             drop,
-            color.rgbOf(config.rainColor),
+            color.rgb_of(config.rainColor),
             config.rain_mode,
         );
 
@@ -117,7 +117,7 @@ pub const RenderContext = struct {
     }
 };
 
-inline fn calculatePadding(config: *const configuration.Configuration) usize {
+inline fn calculate_padding(config: *const configuration.Configuration) usize {
     var space: usize = 0;
     if (config.debug) {
         space += 4;
@@ -130,7 +130,7 @@ inline fn calculatePadding(config: *const configuration.Configuration) usize {
     return space;
 }
 
-inline fn calculateDropLenght(config: *const configuration.Configuration, rows: usize) usize {
+inline fn calculate_drop_lenght(config: *const configuration.Configuration, rows: usize) usize {
     if (config.drop_len > 0) {
         return config.drop_len;
     }

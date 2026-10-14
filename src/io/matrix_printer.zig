@@ -71,9 +71,9 @@ pub const LinearMatrixPrinter = struct {
         }
 
         if (self.vertical) {
-            try self.printVertical(mtrx);
+            try self.print_vertical(mtrx);
         } else {
-            try self.printHorizontal(mtrx);
+            try self.print_horizontal(mtrx);
         }
 
         if (sufix.len > 0) {
@@ -83,7 +83,7 @@ pub const LinearMatrixPrinter = struct {
         try self.printer.print(self.buffer.items);
     }
 
-    pub fn printVertical(
+    fn print_vertical(
         self: *@This(),
         mtrx: *LinearMatrix,
     ) !void {
@@ -99,7 +99,7 @@ pub const LinearMatrixPrinter = struct {
             for (0..cols) |y| {
                 const meta = metadata[y];
 
-                try self.printCell(
+                try self.print_cell(
                     matrix,
                     meta,
                     rows,
@@ -115,7 +115,7 @@ pub const LinearMatrixPrinter = struct {
         }
     }
 
-    pub fn printHorizontal(
+    fn print_horizontal(
         self: *@This(),
         mtrx: *LinearMatrix,
     ) !void {
@@ -131,7 +131,7 @@ pub const LinearMatrixPrinter = struct {
             for (0..rows) |x| {
                 const col_start = x * cols;
 
-                try self.printCell(
+                try self.print_cell(
                     matrix,
                     meta,
                     rows,
@@ -147,7 +147,7 @@ pub const LinearMatrixPrinter = struct {
         }
     }
 
-    inline fn printCell(
+    inline fn print_cell(
         self: *@This(),
         matrix: [][]const u8,
         meta: Meta,
@@ -169,7 +169,7 @@ pub const LinearMatrixPrinter = struct {
 
         const scaleIndex = (rows + cursor - x) % rows;
 
-        const color = self.scale.findUnsafe(scaleIndex) orelse {
+        const color = self.scale.find_unsafe(scaleIndex) orelse {
             try self.buffer.append(self.allocator.*, ' ');
             return;
         };

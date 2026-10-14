@@ -54,7 +54,7 @@ const ColorMap = [_][3]u8{
     .{ 255, 16, 83 }, // NeonRed
 };
 
-pub fn rgbOf(c: Color) [3]u8 {
+pub fn rgb_of(c: Color) [3]u8 {
     return ColorMap[@intFromEnum(c)];
 }
 
@@ -79,13 +79,13 @@ pub const ColorScale = struct {
         for (0..scale + 1) |i| {
             switch (mode) {
                 ThemeGradient.default => {
-                    map[i] = scaleColorDefault(i, scale, base);
+                    map[i] = scale_color_default(i, scale, base);
                 },
                 ThemeGradient.circular => {
-                    map[i] = scaleColorCircular(i, scale, base);
+                    map[i] = scale_color_circular(i, scale, base);
                 },
                 ThemeGradient.linear => {
-                    map[i] = scaleColorLinear(i, scale, base);
+                    map[i] = scale_color_linear(i, scale, base);
                 },
             }
         }
@@ -98,10 +98,10 @@ pub const ColorScale = struct {
             return null;
         }
 
-        return self.findUnsafe(index);
+        return self.find_unsafe(index);
     }
 
-    pub inline fn findUnsafe(self: *@This(), index: usize) ?[3]u8 {
+    pub inline fn find_unsafe(self: @This(), index: usize) ?[3]u8 {
         if (index >= self.map.?.len) {
             return null;
         }
@@ -124,7 +124,7 @@ pub const ColorScale = struct {
         }
     }
 
-    inline fn scaleColorCircular(index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scale_color_circular(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -150,7 +150,7 @@ pub const ColorScale = struct {
         };
     }
 
-    inline fn scaleColorLinear(index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scale_color_linear(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -170,7 +170,7 @@ pub const ColorScale = struct {
         };
     }
 
-    inline fn scaleColorDefault(index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn scale_color_default(index: usize, max: usize, mid: [3]u8) [3]u8 {
         if (max < 2) {
             return .{ 255, 255, 255 };
         }
@@ -178,13 +178,13 @@ pub const ColorScale = struct {
         const half = max / 2;
 
         if (index <= half) {
-            return upperColor(index, half, mid);
+            return upper_color(index, half, mid);
         }
 
-        return scaleColorLinear(index - half, max - half, mid);
+        return lower_color(index - half, max - half, mid);
     }
 
-    inline fn scaleColorLinear(index: usize, max: usize, mid: [3]u8) [3]u8 {
+    inline fn lower_color(index: usize, max: usize, mid: [3]u8) [3]u8 {
         const fi: f32 = @floatFromInt(index);
         const fh: f32 = @floatFromInt(max);
         const t = fi / fh;
@@ -200,7 +200,7 @@ pub const ColorScale = struct {
         };
     }
 
-    inline fn upperColor(index: usize, half: usize, mid: [3]u8) [3]u8 {
+    inline fn upper_color(index: usize, half: usize, mid: [3]u8) [3]u8 {
         const fi: f32 = @floatFromInt(index);
         const fh: f32 = @floatFromInt(half);
         const t = fi / fh;
@@ -226,9 +226,9 @@ pub const ColorScale = struct {
 };
 
 test "correct RGB values for known colors" {
-    try std.testing.expectEqual([3]u8{ 255, 0, 0 }, rgbOf(Color.red));
-    try std.testing.expectEqual([3]u8{ 0, 255, 0 }, rgbOf(Color.green));
-    try std.testing.expectEqual([3]u8{ 0, 0, 255 }, rgbOf(Color.blue));
+    try std.testing.expectEqual([3]u8{ 255, 0, 0 }, rgb_of(Color.red));
+    try std.testing.expectEqual([3]u8{ 0, 255, 0 }, rgb_of(Color.green));
+    try std.testing.expectEqual([3]u8{ 0, 0, 255 }, rgb_of(Color.blue));
 }
 
 test "init creates map with correct length" {

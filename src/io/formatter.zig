@@ -6,7 +6,7 @@ pub const FormatterCode = enum {
     none,
 };
 
-pub fn unionOf(f: FormatterCode) FormatterUnion {
+pub fn union_of(f: FormatterCode) FormatterUnion {
     return switch (f) {
         FormatterCode.ansi => FormatterUnion{ .ansi = .{} },
         FormatterCode.rgb => FormatterUnion{ .rgb = .{} },
