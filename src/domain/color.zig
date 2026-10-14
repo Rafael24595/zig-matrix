@@ -216,11 +216,11 @@ pub const ColorScale = struct {
         };
     }
 
-    fn clamp(color: f32) u8 {
+    inline fn clamp(color: f32) u8 {
         return @intFromFloat(@round(std.math.clamp(color, 0.0, 255.0)));
     }
 
-    fn lerp(a: f32, b: f32, t: f32) f32 {
+    inline fn lerp(a: f32, b: f32, t: f32) f32 {
         return a + (b - a) * t;
     }
 };

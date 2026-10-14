@@ -83,7 +83,7 @@ pub const LinearMatrixPrinter = struct {
         try self.printer.print(self.buffer.items);
     }
 
-    fn print_vertical(
+    inline fn print_vertical(
         self: *@This(),
         mtrx: *LinearMatrix,
     ) !void {
@@ -115,7 +115,7 @@ pub const LinearMatrixPrinter = struct {
         }
     }
 
-    fn print_horizontal(
+    inline fn print_horizontal(
         self: *@This(),
         mtrx: *LinearMatrix,
     ) !void {
