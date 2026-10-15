@@ -79,23 +79,23 @@ pub const LinearMatrix = struct {
         }
     }
 
-    pub fn max_char_bytes(self: *@This()) usize {
+    pub fn max_char_bytes(self: @This()) usize {
         return self.ascii.max_bytes();
     }
 
-    pub fn vector(self: *@This()) ?[][]const u8 {
+    pub fn vector(self: @This()) ?[][]const u8 {
         return self.mtrx;
     }
 
-    pub fn metadata(self: *@This()) ?[]Meta {
+    pub fn metadata(self: @This()) ?[]Meta {
         return self.meta;
     }
 
-    pub fn cols_len(self: *@This()) usize {
+    pub fn cols_len(self: @This()) usize {
         return self.cols;
     }
 
-    pub fn rows_len(self: *@This()) usize {
+    pub fn rows_len(self: @This()) usize {
         return self.rows;
     }
 
