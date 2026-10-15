@@ -303,7 +303,7 @@ test "find and findUnsafe work correctly" {
     defer scale.free();
 
     try std.testing.expect(scale.find(10) == null);
-    try std.testing.expect(scale.findUnsafe(10) == null);
+    try std.testing.expect(scale.find_unsafe(10) == null);
     try std.testing.expect(scale.find(1) != null);
 }
 
