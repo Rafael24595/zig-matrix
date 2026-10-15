@@ -21,6 +21,14 @@ pub fn build(b: *std.Build) void {
         build_zig_zon,
         dep_terminal_kit,
     );
+
+    build_test(
+        b,
+        target,
+        optimize,
+        build_zig_zon,
+        dep_terminal_kit,
+    );
 }
 
 fn build_main(
@@ -55,6 +63,33 @@ fn build_main(
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
+}
+
+fn build_test(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    build_zig_zon: *std.Build.Module,
+    dep_terminal_kit: *std.Build.Dependency,
+) void {
+    const mod = b.createModule(.{
+        .root_source_file = b.path("src/test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = target.result.os.tag != .windows,
+    });
+
+    add_build_zig_zon(mod, build_zig_zon);
+    add_terminal_kit(mod, dep_terminal_kit);
+
+    const tests = b.addTest(.{
+        .root_module = mod,
+    });
+
+    const test_step = b.step("test", "Run tests");
+    const run_tests = b.addRunArtifact(tests);
+
+    test_step.dependOn(&run_tests.step);
 }
 
 fn add_build_zig_zon(

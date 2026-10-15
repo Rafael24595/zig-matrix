@@ -372,3 +372,32 @@ test "next uses table for Symbols mode" {
     }
 }
 
+test "max_bytes returns the expected size for the selected theme" {
+    var lcg = MiniLCG.init(1234);
+
+    var ascii_gen = SymbolGenerator.init(&lcg, .digits);
+    try std.testing.expectEqual(1, ascii_gen.max_bytes());
+
+    var blocks_gen = SymbolGenerator.init(&lcg, .blocks);
+    try std.testing.expectEqual(3, blocks_gen.max_bytes());
+
+    var cyrillic_gen = SymbolGenerator.init(&lcg, .cyrillic);
+    try std.testing.expectEqual(2, cyrillic_gen.max_bytes());
+}
+
+test "default theme uses the ASCII character set" {
+    const meta = metaOf(.default);
+
+    try std.testing.expectEqual(@as(usize, 1), meta.max_bytes);
+    try std.testing.expect(meta.chars.len > 0);
+
+    var has_letter = false;
+    for (meta.chars) |ch| {
+        if (std.mem.eql(u8, ch, "A")) {
+            has_letter = true;
+            break;
+        }
+    }
+
+    try std.testing.expect(has_letter);
+}

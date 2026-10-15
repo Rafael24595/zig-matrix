@@ -141,3 +141,66 @@ inline fn calculate_drop_lenght(config: *const configuration.Configuration, rows
     const f_rows: f32 = @floatFromInt(rows);
     return @intFromFloat(f_rows * config.drop_per);
 }
+
+test "calculate_padding returns zero when debug and controls are disabled" {
+    const config = configuration.Configuration{
+        .debug = false,
+        .controls = false,
+    };
+
+    try std.testing.expectEqual(0, calculate_padding(&config));
+}
+
+test "calculate_padding reserves space for debug output" {
+    const config = configuration.Configuration{
+        .debug = true,
+        .controls = false,
+    };
+
+    try std.testing.expectEqual(4, calculate_padding(&config));
+}
+
+test "calculate_padding reserves space for controls" {
+    const config = configuration.Configuration{
+        .debug = false,
+        .controls = true,
+    };
+
+    try std.testing.expectEqual(1, calculate_padding(&config));
+}
+
+test "calculate_padding reserves space for debug output and controls" {
+    const config = configuration.Configuration{
+        .debug = true,
+        .controls = true,
+    };
+
+    try std.testing.expectEqual(5, calculate_padding(&config));
+}
+
+test "calculate_drop_lenght uses the configured drop length" {
+    const config = configuration.Configuration{
+        .drop_len = 12,
+        .drop_per = 0.5,
+    };
+
+    try std.testing.expectEqual(12, calculate_drop_lenght(&config, 20));
+}
+
+test "calculate_drop_lenght derives the length from the row count" {
+    const config = configuration.Configuration{
+        .drop_len = 0,
+        .drop_per = 0.5,
+    };
+
+    try std.testing.expectEqual(10, calculate_drop_lenght(&config, 20));
+}
+
+test "calculate_drop_lenght returns zero for zero rows" {
+    const config = configuration.Configuration{
+        .drop_len = 0,
+        .drop_per = 0.5,
+    };
+
+    try std.testing.expectEqual(0, calculate_drop_lenght(&config, 0));
+}

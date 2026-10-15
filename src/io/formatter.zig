@@ -230,3 +230,41 @@ test "FormatterUnion with ANSI and RGB adapter" {
 
     allocator.free(buf);
 }
+
+test "union_of selects the requested formatter" {
+    try std.testing.expectEqual(
+        FormatterCode.ansi,
+        union_of(.ansi).code(),
+    );
+    try std.testing.expectEqual(
+        FormatterCode.rgb,
+        union_of(.rgb).code(),
+    );
+    try std.testing.expectEqual(
+        FormatterCode.none,
+        union_of(.none).code(),
+    );
+}
+
+test "VoidFormatter returns the character without color formatting" {
+    var f = VoidFormatter{};
+    var buf: [8]u8 = undefined;
+
+    const out = try f.format(&buf, 255, 128, 64, "X");
+
+    try std.testing.expectEqualStrings("X", out);
+}
+
+test "FormatterUnion reports the active formatter properties" {
+    const ansi = union_of(.ansi);
+    const rgb = union_of(.rgb);
+    const none = union_of(.none);
+
+    try std.testing.expectEqual(FormatterCode.ansi, ansi.code());
+    try std.testing.expectEqual(FormatterCode.rgb, rgb.code());
+    try std.testing.expectEqual(FormatterCode.none, none.code());
+
+    try std.testing.expectEqual(@as(usize, 24), ansi.fmt_bytes());
+    try std.testing.expectEqual(@as(usize, 32), rgb.fmt_bytes());
+    try std.testing.expectEqual(@as(usize, 1), none.fmt_bytes());
+}

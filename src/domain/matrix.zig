@@ -131,3 +131,79 @@ pub const LinearMatrix = struct {
         }
     }
 };
+
+test "next does nothing when the matrix is uninitialized" {
+    var allocator = std.testing.allocator;
+
+    var matrix = LinearMatrix.init(
+        &allocator,
+        undefined,
+        undefined,
+        undefined,
+        .rain,
+    );
+
+    defer matrix.free();
+
+    try matrix.next();
+
+    try std.testing.expect(matrix.vector() == null);
+    try std.testing.expect(matrix.metadata() == null);
+}
+
+test "free can be called multiple times" {
+    var allocator = std.testing.allocator;
+
+    var matrix = LinearMatrix.init(
+        &allocator,
+        undefined,
+        undefined,
+        undefined,
+        .rain,
+    );
+
+    matrix.mtrx = try allocator.alloc([]const u8, 2);
+    matrix.meta = try allocator.alloc(Meta, 1);
+
+    matrix.free();
+    matrix.free();
+
+    try std.testing.expect(matrix.mtrx == null);
+    try std.testing.expect(matrix.meta == null);
+}
+
+test "free is safe before build" {
+    var allocator = std.testing.allocator;
+
+    var matrix = LinearMatrix.init(
+        &allocator,
+        undefined,
+        undefined,
+        undefined,
+        .rain,
+    );
+
+    matrix.free();
+
+    try std.testing.expect(matrix.mtrx == null);
+    try std.testing.expect(matrix.meta == null);
+}
+
+test "next does nothing before build" {
+    var allocator = std.testing.allocator;
+
+    var matrix = LinearMatrix.init(
+        &allocator,
+        undefined,
+        undefined,
+        undefined,
+        .rain,
+    );
+
+    try matrix.next();
+
+    try std.testing.expect(matrix.mtrx == null);
+    try std.testing.expect(matrix.meta == null);
+    try std.testing.expectEqual(@as(usize, 0), matrix.cols_len());
+    try std.testing.expectEqual(@as(usize, 0), matrix.rows_len());
+}
