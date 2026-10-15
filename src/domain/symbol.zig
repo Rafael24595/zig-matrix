@@ -362,7 +362,7 @@ pub const SymbolGenerator = struct {
     }
 
     /// Returns the maximum number of UTF-8 bytes in a generated symbol.
-    pub fn max_bytes(self: *@This()) usize {
+    pub fn max_bytes(self: @This()) usize {
         return self.meta.max_bytes;
     }
 

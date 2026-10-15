@@ -82,7 +82,12 @@ pub const ColorScale = struct {
     ///
     /// `base` supplies the RGB color used by the selected gradient.
     /// The caller must release the allocated map with `free`.
-    pub fn init(allocator: *std.mem.Allocator, scale: usize, base: [3]u8, mode: ThemeGradient) !@This() {
+    pub fn init(
+        allocator: *std.mem.Allocator,
+        scale: usize,
+        base: [3]u8,
+        mode: ThemeGradient,
+    ) !@This() {
         var self = ColorScale{ .allocator = allocator, .mode = mode };
 
         self.map = try self.allocator.alloc([3]u8, scale + 1);
@@ -107,7 +112,7 @@ pub const ColorScale = struct {
 
     /// Returns the RGB value at `index`, or null if the map is unallocated
     /// or the index is out of bounds.
-    pub inline fn find(self: *@This(), index: usize) ?[3]u8 {
+    pub inline fn find(self: @This(), index: usize) ?[3]u8 {
         if (self.map == null) {
             return null;
         }
