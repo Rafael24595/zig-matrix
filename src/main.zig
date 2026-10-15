@@ -222,10 +222,10 @@ fn on_interrupt(context: *anyopaque) void {
     state.request_exit();
 }
 
-fn should_exit(state: *const RuntimeState) bool {
+inline fn should_exit(state: *const RuntimeState) bool {
     return state.exit.load(.acquire);
 }
 
-fn should_reload(state: *const RuntimeState) bool {
+inline fn should_reload(state: *const RuntimeState) bool {
     return state.reload.load(.acquire);
 }
