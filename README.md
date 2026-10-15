@@ -73,7 +73,7 @@ The `zig-matrix` program supports several command line options to customize the 
 | `-l` | Drop length | 0.4 × matrix height | Any unsigned integer |
 | `-tc` | Theme color | green | white, black, red, green, blue, yellow, cyan, magenta, orange, purple, gray, pink, brown, aqua, navy, teal, neon_pink, neon_green, neon_blue, neon_yellow, neon_orange, neon_purple, neon_cyan, neon_red |
 | `-tg` | Theme gradient | default | default, linear, circular |
-| `-ts` | Theme symbol | default | default, binary, latin, latin_upper, latin_lower, digits, symbols, hex, base64, blocks, extended, katana, fade, matrix, code, sci_fi, runes, math, arcane, telemetry, cyrillic, cyrillic_upper, cyrillic_lower, greek, greek_upper, greek_lower, arabic, devanagari |
+| `-ts` | Theme symbol | default | default, binary, latin, latin_upper, latin_lower, digits, symbols, hex, base64, blocks, extended, katana, fade, matrix, code, sci_fi, runes, math, arcane, telemetry, cyrillic, cyrillic_upper, cyrillic_lower, greek, greek_upper, greek_lower, arabic, devanagari, matrix_soup |
 | `-mm` | Matrix mode | rain | rain, wave, wall |
 | `-cm` | Color mode | rgb | rgb, ansi, none |
 | `-o` | Matrix orientation | vertical | vertical, horizontal |

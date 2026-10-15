@@ -31,6 +31,7 @@ pub const Theme = enum {
     greek_lower,
     arabic,
     devanagari,
+    matrix_soup,
     //Chinese,
     //Emoji
 };
@@ -76,6 +77,7 @@ const ThemeMap = [_]ThemeMeta{
     GREEK_LOWER_TABLE,
     ARABIC_TABLE,
     DEVANAGARI_TABLE,
+    MATRIX_SOUP_TABLE,
 };
 
 const ASCII_TABLE = ThemeMeta{
@@ -301,6 +303,13 @@ const DEVANAGARI_TABLE = ThemeMeta{
         "क", "ख", "ग", "घ", "ङ", "च", "छ", "ज", "झ", "ञ", "ट", "ठ",
         "ड", "ढ", "ण", "त", "थ", "द", "ध", "न", "प", "फ", "ब", "भ",
         "म", "य", "र", "ल", "व", "श", "ष", "स", "ह",
+    },
+};
+
+const MATRIX_SOUP_TABLE = ThemeMeta{
+    .max_bytes = 1,
+    .chars = &[_][]const u8{
+        "m", "a", "t", "r", "i", "x", "M", "A", "T", "R", "I", "X",
     },
 };
 
