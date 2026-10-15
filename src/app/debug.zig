@@ -53,7 +53,7 @@ pub fn print_debug(
         persistentAllocator.bytes(),
         scratchAllocator.bytes(),
         paused,
-        context.frame_per(std.time.ms_per_s),
+        context.counter.get_frame_rate(std.time.ms_per_s),
     });
 
     try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any}\n", .{

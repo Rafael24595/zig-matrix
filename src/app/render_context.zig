@@ -4,6 +4,8 @@ const configuration = @import("../configuration/configuration.zig");
 
 const terminal_kit = @import("terminal_kit");
 
+const Counter = terminal_kit.frame.Counter;
+
 const console = terminal_kit.console;
 const Printer = terminal_kit.printer.Printer;
 
@@ -20,9 +22,7 @@ pub const RenderContext = struct {
     matrix: LinearMatrix,
     matrixPrinter: LinearMatrixPrinter,
 
-    last_time: i64,
-    last_stable: u16,
-    frames: u64,
+    counter: Counter,
 
     pub fn init(
         self: *@This(),
@@ -78,45 +78,13 @@ pub const RenderContext = struct {
 
         errdefer self.matrixPrinter.free();
 
-        try self.matrix.build(cols, rows);
-
-        self.last_time = 0;
-        self.last_stable = 0;
-        self.frames = 0;
+        self.counter = Counter.init();
     }
 
     pub fn deinit(self: *@This()) void {
         self.matrix.free();
         self.matrixPrinter.free();
         self.scale.free();
-    }
-
-    pub fn frame_increment(self: *@This()) void {
-        self.frames = self.frames +| 1;
-    }
-
-    pub fn frame_per(self: *@This(), interval: i64) u16 {
-        const current_time = std.time.milliTimestamp();
-
-        if (self.last_time == 0) {
-            self.last_time = current_time;
-            return self.last_stable;
-        }
-
-        const elapsed = current_time - self.last_time;
-        if (elapsed < interval) {
-            return self.last_stable;
-        }
-
-        if (elapsed > 0) {
-            const fps = (self.frames * 1000) / @as(u64, @intCast(elapsed));
-            self.last_stable = @intCast(@min(fps, 65535));
-        }
-
-        self.last_time = current_time;
-        self.frames = 0;
-
-        return self.last_stable;
     }
 };
 

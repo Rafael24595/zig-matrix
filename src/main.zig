@@ -180,7 +180,7 @@ inline fn runRenderCycle(
             state.request_reload();
         }
 
-        context.frame_increment();
+        context.counter.frame_increment();
     }
 }
 
