@@ -45,14 +45,17 @@ pub const LinearMatrix = struct {
     }
 
     pub fn build(self: *@This(), cols: usize, rows: usize) !void {
+        const mtrx = try self.allocator.alloc([]const u8, cols * rows);
+        errdefer self.allocator.free(self.mtrx.?);
+
+        const meta = try self.allocator.alloc(Meta, cols);
+        errdefer self.allocator.free(self.meta.?);
+
         self.cols = cols;
         self.rows = rows;
 
-        self.mtrx = try self.allocator.alloc([]const u8, cols * rows);
-        self.meta = try self.allocator.alloc(Meta, cols);
-
-        const mtrx = self.mtrx.?;
-        const meta = self.meta.?;
+        self.mtrx = mtrx;
+        self.meta = meta;
 
         const delayMode: u8 = switch (self.mode) {
             Mode.rain => @intCast(rows),
