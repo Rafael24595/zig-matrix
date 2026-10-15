@@ -17,6 +17,8 @@ const RenderContext = @import("app/render_context.zig").RenderContext;
 
 const SymbolGenerator = @import("domain/symbol.zig").SymbolGenerator;
 
+/// Initializes application resources, configures the terminal, and starts
+/// the rendering loop.
 pub fn main() !void {
     const basePersistentAllocator = std.heap.page_allocator;
     var persistentAllocator = AllocatorTracer.init(basePersistentAllocator);
@@ -63,6 +65,8 @@ pub fn main() !void {
     );
 }
 
+/// Runs the application session, coordinating input handling and rendering
+/// until termination is requested.
 inline fn run(
     state: *RuntimeState,
     persistentAllocator: *AllocatorTracer,
@@ -119,6 +123,11 @@ inline fn run(
     printer.reset();
 }
 
+/// Runs a rendering cycle using the terminal's current dimensions.
+///
+/// Creates and releases a render context for the duration of the cycle.
+/// A terminal resize ends the current cycle so rendering can restart with
+/// updated dimensions.
 inline fn run_render_cycle(
     allocator: *std.mem.Allocator,
     persistentAllocator: *AllocatorTracer,

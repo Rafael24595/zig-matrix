@@ -17,13 +17,23 @@ const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 const SymbolGenerator = @import("../domain/symbol.zig").SymbolGenerator;
 const color = @import("../domain/color.zig");
 
+/// Holds the resources and state required to render the matrix,
+/// including its color scale, matrix data, and output formatter.
 pub const RenderContext = struct {
+    /// Color scale used to render the matrix symbols.
     scale: color.ColorScale,
+    /// Matrix containing the data to be rendered.
     matrix: LinearMatrix,
+    /// Handles the formatting and output of the matrix.
     matrixPrinter: LinearMatrixPrinter,
 
+    /// Tracks the number of frames rendered and calculates the frame rate.
     counter: Counter,
 
+    /// Initializes the rendering resources using the terminal dimensions
+    /// and the provided configuration.
+    ///
+    /// Returns an error if initialization or matrix construction fails.
     pub fn init(
         self: *@This(),
         allocator: *std.mem.Allocator,
@@ -67,6 +77,8 @@ pub const RenderContext = struct {
 
         errdefer self.matrix.free();
 
+        try self.matrix.build(cols, rows);
+
         self.matrixPrinter = try LinearMatrixPrinter.init(
             allocator,
             printer,
@@ -81,6 +93,9 @@ pub const RenderContext = struct {
         self.counter = Counter.init();
     }
 
+    /// Releases the resources owned by the rendering context.
+    ///
+    /// Must be called after successful initialization.
     pub fn deinit(self: *@This()) void {
         self.matrix.free();
         self.matrixPrinter.free();

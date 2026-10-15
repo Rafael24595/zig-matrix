@@ -119,28 +119,49 @@ const FLAG_ORIENTATION_MODE: Flag = Flag{
     .aux_desc = "(vertical or horizontal)",
 };
 
+/// Stores the application settings parsed from command-line arguments,
+/// including rendering options, animation timing, and matrix appearance.
 pub const Configuration = struct {
+    /// Enables diagnostic information during execution.
     debug: bool = false,
+    /// Enables the display of keyboard controls.
     controls: bool = false,
 
+    /// Random seed used to initialize the matrix generation.
+    /// A value of zero causes the seed to be derived from the current timestamp.
     seed: u64 = 0,
 
+    /// Application start timestamp, in milliseconds since the Unix epoch.
     start_ms: i64 = 0,
 
+    /// Delay between animation frames, in milliseconds.
     milliseconds: u64 = frame_pause_ms,
 
+    /// Drop length as a proportion of the matrix height when `drop_len` is zero.
     drop_per: f32 = 0.4,
+    /// Explicit drop length. A value of zero enables automatic calculation.
     drop_len: usize = 0,
 
+    /// Base color used for the rain effect.
     rainColor: color.Color = .green,
+    /// Gradient applied to the rain effect.
     rain_mode: color.ThemeGradient = .default,
+    /// Theme used to generate matrix symbols.
     symbol_mode: symbol.Theme = .default,
+    /// Behavior used to generate matrix contents.
     matrix_mode: matrix.Mode = .rain,
 
+    /// Formatter used to produce the matrix colors.
     formatter: formatter.FormatterUnion = formatter.FormatterUnion{ .rgb = .{} },
 
+    /// Direction in which the matrix is rendered.
     orientation: orientation.Orientation = .vertical,
 
+    /// Parses command-line arguments into a configuration.
+    ///
+    /// Uses `allocator` for temporary allocations and `printer` for
+    /// formatting or reporting command-line information.
+    /// Exits the process for help, version, or unknown arguments.
     pub fn init(allocator: std.mem.Allocator, printer: *Printer, args: [][:0]u8) !@This() {
         defer printer.reset();
 
@@ -346,6 +367,10 @@ pub const Configuration = struct {
     }
 };
 
+/// Builds the application configuration from the current process arguments.
+///
+/// Allocates the argument list using `allocator` and releases it before
+/// returning. Propagates errors from argument allocation and parsing.
 pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);

@@ -7,17 +7,29 @@ const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 const Meta = @import("../domain/matrix.zig").Meta;
 const Formatter = @import("formatter.zig").FormatterUnion;
 
+/// Renders a linear matrix as formatted terminal output.
 pub const LinearMatrixPrinter = struct {
+    /// Allocator used to allocate the internal buffers.
     allocator: *std.mem.Allocator,
 
+    /// Destination printer used to emit the completed frame.
     printer: *Printer,
+    /// Color scale used to map matrix positions to RGB values.
     scale: *ColorScale,
+    /// Formatter used to encode each visible character.
     formatter: Formatter,
+    /// Whether rows are rendered vertically rather than horizontally.
     vertical: bool,
 
+    /// Accumulates the complete formatted frame before output.
     buffer: std.ArrayList(u8),
+    /// Scratch buffer used to format individual characters.
     format: []u8,
 
+    /// Initializes a matrix printer and allocates its working buffers.
+    ///
+    /// Borrows `printer`, `scale`, and the formatter's related resources.
+    /// The caller must call `free()` when the printer is no longer needed.
     pub fn init(
         allocator: *std.mem.Allocator,
         printer: *Printer,
@@ -50,12 +62,16 @@ pub const LinearMatrixPrinter = struct {
         };
     }
 
+    /// Releases the buffers owned by this printer.
     pub fn free(self: *@This()) void {
         self.buffer.deinit(self.allocator.*);
         self.allocator.free(self.format);
     }
 
-    // TODO: Refactor after checking the performance impact.
+    /// Formats and emits the current matrix frame.
+    ///
+    /// An uninitialized or empty matrix produces no output.
+    /// Errors from buffer growth or the underlying printer are propagated.
     pub fn print(self: *@This(), mtrx: *LinearMatrix) !void {
         if (mtrx.vector() == null or mtrx.vector().?.len == 0) {
             return;

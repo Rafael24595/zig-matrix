@@ -2,6 +2,7 @@ const std = @import("std");
 
 const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
 
+/// Selects the character set used to generate matrix symbols.
 pub const Theme = enum {
     default,
     binary,
@@ -336,15 +337,23 @@ const MATRIX_SOUP_TABLE = ThemeMeta{
 //     },
 // };
 
+/// Returns the character set metadata associated with a theme.
 pub fn metaOf(m: Theme) ThemeMeta {
     return ThemeMap[@intFromEnum(m)];
 }
 
+/// Generates symbols from a selected character set using a pseudo-random
+/// number generator.
 pub const SymbolGenerator = struct {
+    /// Pseudo-random number generator used to select symbols from the character set.
     lcg: *MiniLCG,
 
+    /// Character set and maximum encoded symbol size for this generator.
     meta: ThemeMeta,
 
+    /// Creates a generator for the specified theme.
+    ///
+    /// Borrows `lcg`; the caller retains ownership of the random generator.
     pub fn init(lcg: *MiniLCG, mode: Theme) @This() {
         return SymbolGenerator{
             .lcg = lcg,
@@ -352,10 +361,12 @@ pub const SymbolGenerator = struct {
         };
     }
 
+    /// Returns the maximum number of UTF-8 bytes in a generated symbol.
     pub fn max_bytes(self: *@This()) usize {
         return self.meta.max_bytes;
     }
 
+    /// Returns the next pseudo-random symbol from the selected theme.
     pub fn next(self: *@This()) []const u8 {
         const chars = self.meta.chars;
         const idx = self.lcg.rand_in_range(0, @intCast(chars.len - 1));
