@@ -1,178 +1,181 @@
 # Zig Matrix
 
-A terminal-based Matrix-style digital rain effect implemented in Zig ⚡.
+A configurable, terminal-based Matrix-style digital rain effect written in Zig. ⚡
 
-It features configurable ASCII rain with customizable colors, gradients, symbols, movement modes, orientations, and rendering options.
+Customize the rain with different symbol sets, colors, gradients, movement modes, and rendering orientations.
 
-> **Warning:** This program has been tested on modern terminals (Windows Terminal 1.23.13503.0). Older terminals may exhibit slow rendering or display issues when using RGB color mode. For better performance, consider using ANSI mode, or VOID mode for maximum speed.
-
----
+> **Terminal compatibility:** The project has been tested with Windows Terminal 1.23.13503.0. Rendering performance and character display may vary across terminal emulators. If RGB rendering is slow, try `ansi` mode; use `none` mode when color output is unnecessary.
 
 ## Features
 
-* Configurable rain effect with adjustable:
+- **Configurable rain:** Adjust drop length, frame delay, and random seed.
+- **Color customization:** Choose from a variety of colors and gradient modes.
+- **Symbol themes:** Select from character sets including binary, digits, Latin, Greek, Cyrillic, runes, and more.
+- **Rendering modes:** Choose between `rain`, `wave`, and `wall`.
+- **Flexible orientation:** Render vertically or horizontally.
+- **Multiple color modes:** Use RGB, ANSI, or no color.
+- **Dynamic terminal sizing:** Adapt the matrix to terminal dimensions and handle window resizing.
+- **Debug mode:** Inspect runtime parameters, matrix dimensions, and memory usage.
+- **Console cleanup:** Handle Ctrl+C and restore the terminal state during normal shutdown.
 
-  * Drop length
-  * Rain color
-  * Rain gradient
-  * ASCII symbol set
-  * Matrix mode
-  * Matrix orientation
-  * Color mode
-  * Frame delay
-  * Random seed
-* Vertical and horizontal matrix orientations.
-* Debug mode for displaying internal states such as memory usage, seed, and matrix dimensions.
-* Automatic adaptation to terminal window resizing.
-* Cross-platform signal handling for clean exit (Windows / Unix).
+## Requirements
 
----
+- Zig compiler 0.15.1 (tested version)
+- A terminal emulator with ANSI escape-sequence support
 
-## Build & Run
+## Build
 
-### Requirements
-
-* Zig compiler (tested on 0.15.1)
-
-### Build
+Build the project using Zig:
 
 ```sh
 zig build
 ```
 
-### Run
+For an optimized release build, use `ReleaseFast`:
 
 ```sh
-zig-out/bin/zig-matrix [options]
+zig build -Doptimize=ReleaseFast
 ```
 
----
+The optimized build prioritizes runtime performance over debug-friendly behavior.
 
-## Dynamic Matrix Size
+## Run
 
-The matrix automatically adapts to the size of your terminal window.
-
-* The number of rows and columns is detected at runtime.
-* If you resize the terminal while the program is running, the matrix adjusts to the new dimensions.
-* The matrix orientation determines how the terminal dimensions are mapped to the rendered matrix.
-* This ensures the rain effect always fills the visible area of the terminal.
-
----
-
-## Command Line Options
-
-The `zig-matrix` program supports several command line options to customize the Matrix rain effect.
-
-| Option | Description | Default | Values |
-|--------|-------------|---------|--------|
-| `-h`, `--help` | Show the help message | — | — |
-| `-v`, `--version` | Show project's version | — | — |
-| `-d` | Enable debug mode | Off | — |
-| `-s` | Random seed | Current timestamp in ms | Any unsigned integer |
-| `-ms` | Frame delay in milliseconds | 50 | Any unsigned integer |
-| `-l` | Drop length | 0.4 × matrix height | Any unsigned integer |
-| `-tc` | Theme color | green | white, black, red, green, blue, yellow, cyan, magenta, orange, purple, gray, pink, brown, aqua, navy, teal, neon_pink, neon_green, neon_blue, neon_yellow, neon_orange, neon_purple, neon_cyan, neon_red |
-| `-tg` | Theme gradient | default | default, linear, circular |
-| `-ts` | Theme symbol | default | default, binary, latin, latin_upper, latin_lower, digits, symbols, hex, base64, blocks, extended, katana, fade, matrix, code, sci_fi, runes, math, arcane, telemetry, cyrillic, cyrillic_upper, cyrillic_lower, greek, greek_upper, greek_lower, arabic, devanagari |
-| `-mm` | Matrix mode | rain | rain, wave, wall |
-| `-cm` | Color mode | rgb | rgb, ansi, none |
-| `-o` | Matrix orientation | vertical | vertical, horizontal |
-
----
-
-## Recommended Terminal Setup
-
-For the most immersive experience, a **black terminal background** is recommended. This provides better contrast and ensures the color and symbol themes are displayed as intended.
-
----
-
-## Examples
-
-### Run with default settings
+Launch the executable:
 
 ```sh
 zig-out/bin/zig-matrix
 ```
 
-### Run in debug mode
+Display the available command-line options:
+
+```sh
+zig-out/bin/zig-matrix --help
+```
+
+## Command-Line Options
+
+| Option | Description | Default |
+|---|---|---|
+| `-h`, `--help` | Display the help message | — |
+| `-v`, `--version` | Display the project version | — |
+| `-d` | Enable debug output | Disabled |
+| `-s` | Set the random seed | Current timestamp in milliseconds |
+| `-ms` | Set the frame delay in milliseconds | `50` |
+| `-l` | Set the drop length | `0.4 × matrix height` |
+| `-tc` | Set the theme color | `green` |
+| `-tg` | Set the theme gradient | `default` |
+| `-ts` | Set the symbol theme | `default` |
+| `-mm` | Set the matrix rendering mode | `rain` |
+| `-cm` | Set the color mode | `rgb` |
+| `-o` | Set the matrix orientation | `vertical` |
+
+### Available values
+
+**Color (`-tc`)**
+
+`white`, `black`, `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`, `orange`, `purple`, `gray`, `pink`, `brown`, `aqua`, `navy`, `teal`, `neon_pink`, `neon_green`, `neon_blue`, `neon_yellow`, `neon_orange`, `neon_purple`, `neon_cyan`, `neon_red`
+
+**Gradient (`-tg`)**
+
+`default`, `linear`, `circular`
+
+**Symbol theme (`-ts`)**
+
+`default`, `binary`, `latin`, `latin_upper`, `latin_lower`, `digits`, `symbols`, `hex`, `base64`, `blocks`, `extended`, `katana`, `fade`, `matrix`, `code`, `sci_fi`, `runes`, `math`, `arcane`, `telemetry`, `cyrillic`, `cyrillic_upper`, `cyrillic_lower`, `greek`, `greek_upper`, `greek_lower`, `arabic`, `devanagari`, `matrix_soup`
+
+**Matrix mode (`-mm`)**
+
+`rain`, `wave`, `wall`
+
+**Color mode (`-cm`)**
+
+`rgb`, `ansi`, `none`
+
+**Orientation (`-o`)**
+
+`vertical`, `horizontal`
+
+## Examples
+
+Run with the default configuration:
+
+```sh
+zig-out/bin/zig-matrix
+```
+
+Enable debug output:
 
 ```sh
 zig-out/bin/zig-matrix -d
 ```
 
-### Use a specific ASCII symbol set
+Use binary symbols:
 
 ```sh
 zig-out/bin/zig-matrix -ts binary
 ```
 
-### Set a custom rain color
+Change the rain color:
 
 ```sh
 zig-out/bin/zig-matrix -tc neon_blue
 ```
 
-### Set a custom rain gradient
+Apply a circular gradient:
 
 ```sh
 zig-out/bin/zig-matrix -tg circular
 ```
 
-### Use a specific matrix mode
+Use wave mode:
 
 ```sh
 zig-out/bin/zig-matrix -mm wave
 ```
 
-### Render the matrix horizontally
+Render horizontally:
 
 ```sh
 zig-out/bin/zig-matrix -o horizontal
 ```
 
-### Use ANSI color mode
+Disable color output:
 
 ```sh
-zig-out/bin/zig-matrix -cm ANSI
+zig-out/bin/zig-matrix -cm none
 ```
 
-### Combine multiple options
+Combine multiple options:
 
 ```sh
 zig-out/bin/zig-matrix -tc neon_green -tg circular -ts binary -mm wave -o horizontal
 ```
 
----
+## Terminal Recommendations
+
+A black terminal background is recommended for the intended Matrix-style appearance and good contrast.
+
+RGB rendering may perform differently depending on the terminal emulator. If performance is an issue, try ANSI color mode or disable colors entirely.
 
 ## Debug Mode
 
-When enabled (`-d`), the program prints additional runtime information, including:
+Enable debug output with `-d` to inspect runtime information, including:
 
-* Project name and version
-* Memory usage (persistent & scratch)
-* Execution parameters:
+- Project name and version
+- Persistent and scratch memory usage
+- Frames per second (FPS)
+- Frame delay in milliseconds
+- Random seed
+- Symbol theme and color configuration
+- Gradient and matrix rendering mode
+- Matrix orientation and dimensions
 
-  * Frame delay
-  * ASCII symbol mode
-  * Rain color
-  * Rain gradient
-  * Matrix mode
-  * Matrix orientation
-  * Color mode
-* Random seed
-* Matrix dimensions
+## Shutdown and Signal Handling
 
----
+The application handles Ctrl+C to support a graceful shutdown.
 
-## Signal Handling
+- **Windows:** Uses `SetConsoleCtrlHandler` to handle console control events.
+- **Unix/Linux:** Handles `SIGINT`.
 
-The program provides cross-platform signal handling for graceful shutdown.
-
-* **Windows:** Uses `SetConsoleCtrlHandler` to intercept `CTRL+C`.
-* **Unix/Linux:** Captures `SIGINT` (`Ctrl+C`).
-
-Both implementations ensure:
-
-* The console is cleaned up.
-* The cursor is shown again.
-* The program exits gracefully.
+The shutdown path is intended to clean up console state and restore the cursor. Exact behavior may depend on how the process terminates and on the terminal environment.

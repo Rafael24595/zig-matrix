@@ -4,6 +4,8 @@ const configuration = @import("../configuration/configuration.zig");
 
 const terminal_kit = @import("terminal_kit");
 
+const Counter = terminal_kit.frame.Counter;
+
 const console = terminal_kit.console;
 const Printer = terminal_kit.printer.Printer;
 
@@ -15,15 +17,23 @@ const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 const SymbolGenerator = @import("../domain/symbol.zig").SymbolGenerator;
 const color = @import("../domain/color.zig");
 
+/// Holds the resources and state required to render the matrix,
+/// including its color scale, matrix data, and output formatter.
 pub const RenderContext = struct {
+    /// Color scale used to render the matrix symbols.
     scale: color.ColorScale,
+    /// Matrix containing the data to be rendered.
     matrix: LinearMatrix,
+    /// Handles the formatting and output of the matrix.
     matrixPrinter: LinearMatrixPrinter,
 
-    last_time: i64,
-    last_stable: u16,
-    frames: u64,
+    /// Tracks the number of frames rendered and calculates the frame rate.
+    counter: Counter,
 
+    /// Initializes the rendering resources using the terminal dimensions
+    /// and the provided configuration.
+    ///
+    /// Returns an error if initialization or matrix construction fails.
     pub fn init(
         self: *@This(),
         allocator: *std.mem.Allocator,
@@ -67,6 +77,8 @@ pub const RenderContext = struct {
 
         errdefer self.matrix.free();
 
+        try self.matrix.build(cols, rows);
+
         self.matrixPrinter = try LinearMatrixPrinter.init(
             allocator,
             printer,
@@ -78,45 +90,16 @@ pub const RenderContext = struct {
 
         errdefer self.matrixPrinter.free();
 
-        try self.matrix.build(cols, rows);
-
-        self.last_time = 0;
-        self.last_stable = 0;
-        self.frames = 0;
+        self.counter = Counter.init();
     }
 
+    /// Releases the resources owned by the rendering context.
+    ///
+    /// Must be called after successful initialization.
     pub fn deinit(self: *@This()) void {
         self.matrix.free();
         self.matrixPrinter.free();
         self.scale.free();
-    }
-
-    pub fn frame_increment(self: *@This()) void {
-        self.frames = self.frames +| 1;
-    }
-
-    pub fn frame_per(self: *@This(), interval: i64) u16 {
-        const current_time = std.time.milliTimestamp();
-
-        if (self.last_time == 0) {
-            self.last_time = current_time;
-            return self.last_stable;
-        }
-
-        const elapsed = current_time - self.last_time;
-        if (elapsed < interval) {
-            return self.last_stable;
-        }
-
-        if (elapsed > 0) {
-            const fps = (self.frames * 1000) / @as(u64, @intCast(elapsed));
-            self.last_stable = @intCast(@min(fps, 65535));
-        }
-
-        self.last_time = current_time;
-        self.frames = 0;
-
-        return self.last_stable;
     }
 };
 
@@ -140,4 +123,67 @@ inline fn calculate_drop_lenght(config: *const configuration.Configuration, rows
 
     const f_rows: f32 = @floatFromInt(rows);
     return @intFromFloat(f_rows * config.drop_per);
+}
+
+test "calculate_padding returns zero when debug and controls are disabled" {
+    const config = configuration.Configuration{
+        .debug = false,
+        .controls = false,
+    };
+
+    try std.testing.expectEqual(0, calculate_padding(&config));
+}
+
+test "calculate_padding reserves space for debug output" {
+    const config = configuration.Configuration{
+        .debug = true,
+        .controls = false,
+    };
+
+    try std.testing.expectEqual(4, calculate_padding(&config));
+}
+
+test "calculate_padding reserves space for controls" {
+    const config = configuration.Configuration{
+        .debug = false,
+        .controls = true,
+    };
+
+    try std.testing.expectEqual(1, calculate_padding(&config));
+}
+
+test "calculate_padding reserves space for debug output and controls" {
+    const config = configuration.Configuration{
+        .debug = true,
+        .controls = true,
+    };
+
+    try std.testing.expectEqual(5, calculate_padding(&config));
+}
+
+test "calculate_drop_lenght uses the configured drop length" {
+    const config = configuration.Configuration{
+        .drop_len = 12,
+        .drop_per = 0.5,
+    };
+
+    try std.testing.expectEqual(12, calculate_drop_lenght(&config, 20));
+}
+
+test "calculate_drop_lenght derives the length from the row count" {
+    const config = configuration.Configuration{
+        .drop_len = 0,
+        .drop_per = 0.5,
+    };
+
+    try std.testing.expectEqual(10, calculate_drop_lenght(&config, 20));
+}
+
+test "calculate_drop_lenght returns zero for zero rows" {
+    const config = configuration.Configuration{
+        .drop_len = 0,
+        .drop_per = 0.5,
+    };
+
+    try std.testing.expectEqual(0, calculate_drop_lenght(&config, 0));
 }

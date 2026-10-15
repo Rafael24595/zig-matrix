@@ -2,6 +2,7 @@ const std = @import("std");
 
 const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
 
+/// Selects the character set used to generate matrix symbols.
 pub const Theme = enum {
     default,
     binary,
@@ -31,6 +32,7 @@ pub const Theme = enum {
     greek_lower,
     arabic,
     devanagari,
+    matrix_soup,
     //Chinese,
     //Emoji
 };
@@ -76,6 +78,7 @@ const ThemeMap = [_]ThemeMeta{
     GREEK_LOWER_TABLE,
     ARABIC_TABLE,
     DEVANAGARI_TABLE,
+    MATRIX_SOUP_TABLE,
 };
 
 const ASCII_TABLE = ThemeMeta{
@@ -304,38 +307,53 @@ const DEVANAGARI_TABLE = ThemeMeta{
     },
 };
 
-const CHINESE_TABLE = ThemeMeta{
-    .max_bytes = 3,
+const MATRIX_SOUP_TABLE = ThemeMeta{
+    .max_bytes = 1,
     .chars = &[_][]const u8{
-        "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
-        "口", "日", "月", "山", "水", "火", "木", "金", "土", "田",
-        "人", "口", "子", "女", "心", "手", "目", "耳", "足", "心",
-        "天", "生", "学", "力", "気", "心", "王", "中", "大", "小",
-        "上", "下", "左", "右", "文", "字", "語", "書", "行", "食",
+        "m", "a", "t", "r", "i", "x", "M", "A", "T", "R", "I", "X",
     },
 };
 
-const EMOJI_TABLE = ThemeMeta{
-    .max_bytes = 3,
-    .chars = &[_][]const u8{
-        "↑", "↓", "→", "←", "↖", "↗", "↘", "↙", "⇑", "⇓", "⇐", "⇒",
-        "★", "☆", "☀", "☁", "☂", "☃", "☄", "☾", "☽", "■", "□", "◆",
-        "◇", "▲", "△", "▼", "▽", "●", "○", "▤", "▥", "▦", "▧", "▨",
-        "▩", "✈", "✉", "☎", "✂", "✏", "✒", "✿", "✾", "❀", "❁", "❂",
-        "❃", "❄", "❅", "❆", "❇", "±",  "×",  "÷",  "=",   "≠", "≤", "≥",
-        "≈", "∞", "∂", "∇", "∑", "∏",
-    },
-};
+// const CHINESE_TABLE = ThemeMeta{
+//     .max_bytes = 3,
+//     .chars = &[_][]const u8{
+//         "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
+//         "口", "日", "月", "山", "水", "火", "木", "金", "土", "田",
+//         "人", "口", "子", "女", "心", "手", "目", "耳", "足", "心",
+//         "天", "生", "学", "力", "気", "心", "王", "中", "大", "小",
+//         "上", "下", "左", "右", "文", "字", "語", "書", "行", "食",
+//     },
+// };
 
+// const EMOJI_TABLE = ThemeMeta{
+//     .max_bytes = 3,
+//     .chars = &[_][]const u8{
+//         "↑", "↓", "→", "←", "↖", "↗", "↘", "↙", "⇑", "⇓", "⇐", "⇒",
+//         "★", "☆", "☀", "☁", "☂", "☃", "☄", "☾", "☽", "■", "□", "◆",
+//         "◇", "▲", "△", "▼", "▽", "●", "○", "▤", "▥", "▦", "▧", "▨",
+//         "▩", "✈", "✉", "☎", "✂", "✏", "✒", "✿", "✾", "❀", "❁", "❂",
+//         "❃", "❄", "❅", "❆", "❇", "±",  "×",  "÷",  "=",   "≠", "≤", "≥",
+//         "≈", "∞", "∂", "∇", "∑", "∏",
+//     },
+// };
+
+/// Returns the character set metadata associated with a theme.
 pub fn metaOf(m: Theme) ThemeMeta {
     return ThemeMap[@intFromEnum(m)];
 }
 
+/// Generates symbols from a selected character set using a pseudo-random
+/// number generator.
 pub const SymbolGenerator = struct {
+    /// Pseudo-random number generator used to select symbols from the character set.
     lcg: *MiniLCG,
 
+    /// Character set and maximum encoded symbol size for this generator.
     meta: ThemeMeta,
 
+    /// Creates a generator for the specified theme.
+    ///
+    /// Borrows `lcg`; the caller retains ownership of the random generator.
     pub fn init(lcg: *MiniLCG, mode: Theme) @This() {
         return SymbolGenerator{
             .lcg = lcg,
@@ -343,10 +361,12 @@ pub const SymbolGenerator = struct {
         };
     }
 
-    pub fn max_bytes(self: *@This()) usize {
+    /// Returns the maximum number of UTF-8 bytes in a generated symbol.
+    pub fn max_bytes(self: @This()) usize {
         return self.meta.max_bytes;
     }
 
+    /// Returns the next pseudo-random symbol from the selected theme.
     pub fn next(self: *@This()) []const u8 {
         const chars = self.meta.chars;
         const idx = self.lcg.rand_in_range(0, @intCast(chars.len - 1));
@@ -372,3 +392,32 @@ test "next uses table for Symbols mode" {
     }
 }
 
+test "max_bytes returns the expected size for the selected theme" {
+    var lcg = MiniLCG.init(1234);
+
+    var ascii_gen = SymbolGenerator.init(&lcg, .digits);
+    try std.testing.expectEqual(1, ascii_gen.max_bytes());
+
+    var blocks_gen = SymbolGenerator.init(&lcg, .blocks);
+    try std.testing.expectEqual(3, blocks_gen.max_bytes());
+
+    var cyrillic_gen = SymbolGenerator.init(&lcg, .cyrillic);
+    try std.testing.expectEqual(2, cyrillic_gen.max_bytes());
+}
+
+test "default theme uses the ASCII character set" {
+    const meta = metaOf(.default);
+
+    try std.testing.expectEqual(@as(usize, 1), meta.max_bytes);
+    try std.testing.expect(meta.chars.len > 0);
+
+    var has_letter = false;
+    for (meta.chars) |ch| {
+        if (std.mem.eql(u8, ch, "A")) {
+            has_letter = true;
+            break;
+        }
+    }
+
+    try std.testing.expect(has_letter);
+}

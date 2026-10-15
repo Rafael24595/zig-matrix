@@ -17,6 +17,8 @@ const RenderContext = @import("app/render_context.zig").RenderContext;
 
 const SymbolGenerator = @import("domain/symbol.zig").SymbolGenerator;
 
+/// Initializes application resources, configures the terminal, and starts
+/// the rendering loop.
 pub fn main() !void {
     const basePersistentAllocator = std.heap.page_allocator;
     var persistentAllocator = AllocatorTracer.init(basePersistentAllocator);
@@ -63,6 +65,8 @@ pub fn main() !void {
     );
 }
 
+/// Runs the application session, coordinating input handling and rendering
+/// until termination is requested.
 inline fn run(
     state: *RuntimeState,
     persistentAllocator: *AllocatorTracer,
@@ -70,7 +74,7 @@ inline fn run(
     config: *const configuration.Configuration,
     printer: *Printer,
 ) !void {
-    try signals.install(state, onInterrupt);
+    try signals.install(state, on_interrupt);
 
     defer {
         signals.uninstall() catch |err| {
@@ -95,16 +99,16 @@ inline fn run(
 
     var input_thread = try std.Thread.spawn(
         .{},
-        runInputLoop,
+        run_input_loop,
         .{state},
     );
 
     defer input_thread.join();
 
-    while (!shouldExit(state)) {
+    while (!should_exit(state)) {
         _ = state.consume_reload();
 
-        try runRenderCycle(
+        try run_render_cycle(
             &allocator,
             persistentAllocator,
             scratchAllocator,
@@ -119,7 +123,12 @@ inline fn run(
     printer.reset();
 }
 
-inline fn runRenderCycle(
+/// Runs a rendering cycle using the terminal's current dimensions.
+///
+/// Creates and releases a render context for the duration of the cycle.
+/// A terminal resize ends the current cycle so rendering can restart with
+/// updated dimensions.
+inline fn run_render_cycle(
     allocator: *std.mem.Allocator,
     persistentAllocator: *AllocatorTracer,
     scratchAllocator: *AllocatorTracer,
@@ -146,7 +155,7 @@ inline fn runRenderCycle(
 
     try printer.print(console.CLEAN_CONSOLE);
 
-    while (!shouldExit(state) and !shouldReload(state)) {
+    while (!should_exit(state) and !should_reload(state)) {
         try printer.print(console.RESET_CURSOR);
 
         if (config.debug) {
@@ -180,14 +189,14 @@ inline fn runRenderCycle(
             state.request_reload();
         }
 
-        context.frame_increment();
+        context.counter.frame_increment();
     }
 }
 
-fn runInputLoop(state: *RuntimeState) !void {
+fn run_input_loop(state: *RuntimeState) !void {
     const stdin = std.fs.File.stdin();
 
-    while (!shouldExit(state)) {
+    while (!should_exit(state)) {
         var buf: [1]u8 = undefined;
 
         const count = try stdin.read(&buf);
@@ -217,15 +226,15 @@ fn runInputLoop(state: *RuntimeState) !void {
     }
 }
 
-fn onInterrupt(context: *anyopaque) void {
+fn on_interrupt(context: *anyopaque) void {
     const state: *RuntimeState = @ptrCast(@alignCast(context));
     state.request_exit();
 }
 
-fn shouldExit(state: *const RuntimeState) bool {
+inline fn should_exit(state: *const RuntimeState) bool {
     return state.exit.load(.acquire);
 }
 
-fn shouldReload(state: *const RuntimeState) bool {
+inline fn should_reload(state: *const RuntimeState) bool {
     return state.reload.load(.acquire);
 }

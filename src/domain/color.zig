@@ -1,5 +1,6 @@
 const std = @import("std");
 
+/// Supported named colors and their RGB representations.
 pub const Color = enum {
     white,
     black,
@@ -54,23 +55,39 @@ const ColorMap = [_][3]u8{
     .{ 255, 16, 83 }, // NeonRed
 };
 
+/// Returns the 8-bit RGB components associated with a named color.
 pub fn rgb_of(c: Color) [3]u8 {
     return ColorMap[@intFromEnum(c)];
 }
 
+/// Selects the gradient algorithm used to generate a color scale.
 pub const ThemeGradient = enum {
     default,
     linear,
     circular,
 };
 
+/// Stores a dynamically allocated sequence of RGB colors generated
+/// from a base color and a gradient mode.
 pub const ColorScale = struct {
+    /// Allocator used to allocate the color map.
     allocator: *std.mem.Allocator,
+    /// Generated RGB entries, or null when no map is allocated.
     map: ?[][3]u8 = null,
 
+    /// Algorithm used to generate the color map.
     mode: ThemeGradient = ThemeGradient.default,
 
-    pub fn init(allocator: *std.mem.Allocator, scale: usize, base: [3]u8, mode: ThemeGradient) !@This() {
+    /// Allocates and generates a color map containing `scale + 1` entries.
+    ///
+    /// `base` supplies the RGB color used by the selected gradient.
+    /// The caller must release the allocated map with `free`.
+    pub fn init(
+        allocator: *std.mem.Allocator,
+        scale: usize,
+        base: [3]u8,
+        mode: ThemeGradient,
+    ) !@This() {
         var self = ColorScale{ .allocator = allocator, .mode = mode };
 
         self.map = try self.allocator.alloc([3]u8, scale + 1);
@@ -93,7 +110,9 @@ pub const ColorScale = struct {
         return self;
     }
 
-    pub inline fn find(self: *@This(), index: usize) ?[3]u8 {
+    /// Returns the RGB value at `index`, or null if the map is unallocated
+    /// or the index is out of bounds.
+    pub inline fn find(self: @This(), index: usize) ?[3]u8 {
         if (self.map == null) {
             return null;
         }
@@ -101,6 +120,10 @@ pub const ColorScale = struct {
         return self.find_unsafe(index);
     }
 
+    /// Returns the RGB value at `index`, or null if it is out of bounds.
+    ///
+    /// Requires the map to be allocated; unlike `find`, this method
+    /// does not check whether the map is null.
     pub inline fn find_unsafe(self: @This(), index: usize) ?[3]u8 {
         if (index >= self.map.?.len) {
             return null;
@@ -109,6 +132,7 @@ pub const ColorScale = struct {
         return self.map.?[index];
     }
 
+    /// Returns the number of allocated color entries, or zero if no map exists.
     pub fn len(self: *@This()) usize {
         if (self.map == null) {
             return 0;
@@ -117,6 +141,8 @@ pub const ColorScale = struct {
         return self.map.?.len;
     }
 
+    /// Releases the color map and resets `map` to null.
+    /// Safe to call when the map is already null.
     pub fn free(self: *@This()) void {
         if (self.map) |m| {
             self.allocator.free(m);
@@ -303,7 +329,7 @@ test "find and findUnsafe work correctly" {
     defer scale.free();
 
     try std.testing.expect(scale.find(10) == null);
-    try std.testing.expect(scale.findUnsafe(10) == null);
+    try std.testing.expect(scale.find_unsafe(10) == null);
     try std.testing.expect(scale.find(1) != null);
 }
 
@@ -315,4 +341,3 @@ test "free releases memory and resets map" {
     scale.free();
     try std.testing.expectEqual(@as(usize, 0), scale.len());
 }
-

@@ -1,11 +1,16 @@
 const std = @import("std");
 
+/// Selects the color formatting strategy used for terminal output.
 pub const FormatterCode = enum {
+    /// Uses the 256-color ANSI palette.
     ansi,
+    /// Uses 24-bit RGB ANSI escape sequences.
     rgb,
+    /// Outputs the character without a foreground color sequence.
     none,
 };
 
+/// Creates a formatter for the selected output format.
 pub fn union_of(f: FormatterCode) FormatterUnion {
     return switch (f) {
         FormatterCode.ansi => FormatterUnion{ .ansi = .{} },
@@ -14,14 +19,14 @@ pub fn union_of(f: FormatterCode) FormatterUnion {
     };
 }
 
+/// Type-erased interface for the supported terminal formatters.
 pub const FormatterUnion = union(enum) {
     ansi: AnsiFormatter,
     rgb: RgbFormatter,
     void: VoidFormatter,
 
-    pub fn code(
-        self: @This(),
-    ) FormatterCode {
+    /// Returns the format code identifying the active formatter.
+    pub fn code(self: @This()) FormatterCode {
         return switch (self) {
             .ansi => |f| f.code(),
             .rgb => |f| f.code(),
@@ -29,6 +34,7 @@ pub const FormatterUnion = union(enum) {
         };
     }
 
+    /// Returns the buffer capacity recommended for formatting one character.
     pub fn fmt_bytes(self: @This()) usize {
         return switch (self) {
             .ansi => |f| f.fmt_bytes(),
@@ -37,6 +43,7 @@ pub const FormatterUnion = union(enum) {
         };
     }
 
+    /// Returns the prefix emitted before the formatted character.
     pub fn prefix(self: @This()) []const u8 {
         return switch (self) {
             .ansi => |f| f.prefix(),
@@ -45,6 +52,7 @@ pub const FormatterUnion = union(enum) {
         };
     }
 
+    /// Returns the suffix emitted after the formatted character.
     pub fn sufix(self: @This()) []const u8 {
         return switch (self) {
             .ansi => |f| f.sufix(),
@@ -53,6 +61,10 @@ pub const FormatterUnion = union(enum) {
         };
     }
 
+    /// Formats a character using the selected color strategy.
+    ///
+    /// The returned slice refers to `buffer`, which must have sufficient
+    /// capacity and remain valid while the result is used.
     pub fn format(
         self: @This(),
         buffer: []u8,
@@ -229,4 +241,42 @@ test "FormatterUnion with ANSI and RGB adapter" {
     );
 
     allocator.free(buf);
+}
+
+test "union_of selects the requested formatter" {
+    try std.testing.expectEqual(
+        FormatterCode.ansi,
+        union_of(.ansi).code(),
+    );
+    try std.testing.expectEqual(
+        FormatterCode.rgb,
+        union_of(.rgb).code(),
+    );
+    try std.testing.expectEqual(
+        FormatterCode.none,
+        union_of(.none).code(),
+    );
+}
+
+test "VoidFormatter returns the character without color formatting" {
+    var f = VoidFormatter{};
+    var buf: [8]u8 = undefined;
+
+    const out = try f.format(&buf, 255, 128, 64, "X");
+
+    try std.testing.expectEqualStrings("X", out);
+}
+
+test "FormatterUnion reports the active formatter properties" {
+    const ansi = union_of(.ansi);
+    const rgb = union_of(.rgb);
+    const none = union_of(.none);
+
+    try std.testing.expectEqual(FormatterCode.ansi, ansi.code());
+    try std.testing.expectEqual(FormatterCode.rgb, rgb.code());
+    try std.testing.expectEqual(FormatterCode.none, none.code());
+
+    try std.testing.expectEqual(@as(usize, 24), ansi.fmt_bytes());
+    try std.testing.expectEqual(@as(usize, 32), rgb.fmt_bytes());
+    try std.testing.expectEqual(@as(usize, 1), none.fmt_bytes());
 }
