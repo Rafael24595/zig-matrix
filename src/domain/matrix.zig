@@ -125,12 +125,14 @@ pub const LinearMatrix = struct {
     }
 
     pub fn free(self: *@This()) void {
-        if (self.mtrx != null) {
-            self.allocator.free(self.mtrx.?);
+        if (self.mtrx) |mtrx| {
+            self.allocator.free(mtrx);
+            self.mtrx = null;
         }
 
-        if (self.meta != null) {
-            self.allocator.free(self.meta.?);
+        if (self.meta) |meta| {
+            self.allocator.free(meta);
+            self.meta = null;
         }
     }
 };
