@@ -1,8 +1,6 @@
 const std = @import("std");
 
-const terminal_kit = @import("terminal_kit");
-
-const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
 
 const AsciiGenerator = @import("symbol.zig").SymbolGenerator;
 const ColorScale = @import("color.zig").ColorScale;

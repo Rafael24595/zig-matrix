@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const configuration = @import("../configuration/configuration.zig");
-
 const terminal_kit = @import("terminal_kit");
 
 const Counter = terminal_kit.frame.Counter;
@@ -10,6 +8,8 @@ const console = terminal_kit.console;
 const Printer = terminal_kit.printer.Printer;
 
 const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+
+const configuration = @import("../configuration/configuration.zig");
 
 const LinearMatrixPrinter = @import("../io/matrix_printer.zig").LinearMatrixPrinter;
 
