@@ -369,7 +369,7 @@ pub const SymbolGenerator = struct {
     /// Returns the next pseudo-random symbol from the selected theme.
     pub fn next(self: *@This()) []const u8 {
         const chars = self.meta.chars;
-        const idx = self.lcg.rand_in_range(0, @intCast(chars.len - 1));
+        const idx = self.lcg.rand_in_range(0, chars.len - 1);
         return chars[idx];
     }
 };

@@ -1,8 +1,6 @@
 const std = @import("std");
 
-const terminal_kit = @import("terminal_kit");
-
-const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
 
 const AsciiGenerator = @import("symbol.zig").SymbolGenerator;
 const ColorScale = @import("color.zig").ColorScale;
@@ -86,9 +84,9 @@ pub const LinearMatrix = struct {
         self.mtrx = mtrx;
         self.meta = meta;
 
-        const delayMode: u8 = switch (self.mode) {
-            Mode.rain => @intCast(rows),
-            Mode.wave => @intCast(5),
+        const delayMode: usize = switch (self.mode) {
+            Mode.rain => rows,
+            Mode.wave => 5,
             Mode.wall => 0,
         };
 
@@ -97,7 +95,7 @@ pub const LinearMatrix = struct {
 
             meta[x].cursor = 0;
             meta[x].loop = 0;
-            meta[x].delay = @intCast(delay);
+            meta[x].delay = delay;
 
             const col_start = x * self.rows;
 

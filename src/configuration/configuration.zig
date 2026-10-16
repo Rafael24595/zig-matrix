@@ -10,6 +10,8 @@ const Printer = terminal_kit.printer.Printer;
 const Flag = terminal_kit.configuration.Flag;
 const kit_conf = terminal_kit.configuration;
 
+const kit_color = terminal_kit.color;
+
 const symbol = @import("../domain/symbol.zig");
 const color = @import("../domain/color.zig");
 
@@ -143,7 +145,7 @@ pub const Configuration = struct {
     drop_len: usize = 0,
 
     /// Base color used for the rain effect.
-    rainColor: color.Color = .green,
+    rainColor: kit_color.Color = .green,
     /// Gradient applied to the rain effect.
     rain_mode: color.ThemeGradient = .default,
     /// Theme used to generate matrix symbols.
@@ -210,7 +212,7 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_THEME_COLOR.flag_short)) {
-                config.rainColor = try kit_conf.parse_enum(color.Color, printer, args, i, FLAG_THEME_COLOR);
+                config.rainColor = try kit_conf.parse_enum(kit_color.Color, printer, args, i, FLAG_THEME_COLOR);
                 i += 1;
                 continue;
             }
@@ -390,7 +392,7 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(@as(f32, 0.4), config.drop_per);
     try std.testing.expectEqual(@as(usize, 0), config.drop_len);
 
-    try std.testing.expectEqual(color.Color.green, config.rainColor);
+    try std.testing.expectEqual(kit_color.Color.green, config.rainColor);
     try std.testing.expectEqual(color.ThemeGradient.default, config.rain_mode);
     try std.testing.expectEqual(symbol.Theme.default, config.symbol_mode);
     try std.testing.expectEqual(matrix.Mode.rain, config.matrix_mode);

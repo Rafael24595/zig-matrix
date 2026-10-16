@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const configuration = @import("../configuration/configuration.zig");
-
 const terminal_kit = @import("terminal_kit");
 
 const Counter = terminal_kit.frame.Counter;
@@ -10,6 +8,10 @@ const console = terminal_kit.console;
 const Printer = terminal_kit.printer.Printer;
 
 const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+
+const kit_color = terminal_kit.color;
+
+const configuration = @import("../configuration/configuration.zig");
 
 const LinearMatrixPrinter = @import("../io/matrix_printer.zig").LinearMatrixPrinter;
 
@@ -61,7 +63,7 @@ pub const RenderContext = struct {
         self.scale = try color.ColorScale.init(
             allocator,
             drop,
-            color.rgb_of(config.rainColor),
+            kit_color.rgb_of(config.rainColor),
             config.rain_mode,
         );
 

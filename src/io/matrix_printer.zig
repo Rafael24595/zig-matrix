@@ -49,7 +49,7 @@ pub const LinearMatrixPrinter = struct {
         const estimatedSize = prefix.len + mtrx_fmt_len + sufix.len;
 
         const buffer = try std.ArrayList(u8).initCapacity(allocator.*, estimatedSize);
-        const format_buf = try allocator.alloc(u8, formatter.fmt_bytes());
+        const format = try allocator.alloc(u8, formatter.fmt_bytes());
 
         return .{
             .allocator = allocator,
@@ -58,7 +58,7 @@ pub const LinearMatrixPrinter = struct {
             .formatter = formatter,
             .vertical = vertical,
             .buffer = buffer,
-            .format = format_buf,
+            .format = format,
         };
     }
 
