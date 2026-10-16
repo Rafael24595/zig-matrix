@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const configuration = @import("configuration/configuration.zig");
-
 const terminal_kit = @import("terminal_kit");
 
 const signals = terminal_kit.signals;
@@ -11,6 +9,8 @@ const Printer = terminal_kit.printer.Printer;
 const RuntimeState = terminal_kit.runtime_state.RuntimeState;
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+
+const configuration = @import("configuration/configuration.zig");
 
 const debug = @import("app/debug.zig");
 const RenderContext = @import("app/render_context.zig").RenderContext;
@@ -53,7 +53,6 @@ pub fn main() !void {
     try console.enable_utf8();
 
     try console.enable_raw_mode();
-
     defer console.disable_raw_mode();
 
     try run(
@@ -91,6 +90,8 @@ inline fn run(
         config.symbol_mode,
     );
 
+    defer printer.reset();
+
     try printer.print(console.CLEAN_ALL);
     try printer.print(console.HIDE_CURSOR);
 
@@ -119,8 +120,6 @@ inline fn run(
             &asciiGenerator,
         );
     }
-
-    printer.reset();
 }
 
 /// Runs a rendering cycle using the terminal's current dimensions.
