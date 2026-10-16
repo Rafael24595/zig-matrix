@@ -84,9 +84,9 @@ pub const LinearMatrix = struct {
         self.mtrx = mtrx;
         self.meta = meta;
 
-        const delayMode: u8 = switch (self.mode) {
-            Mode.rain => @intCast(rows),
-            Mode.wave => @intCast(5),
+        const delayMode: usize = switch (self.mode) {
+            Mode.rain => rows,
+            Mode.wave => 5,
             Mode.wall => 0,
         };
 
@@ -95,7 +95,7 @@ pub const LinearMatrix = struct {
 
             meta[x].cursor = 0;
             meta[x].loop = 0;
-            meta[x].delay = @intCast(delay);
+            meta[x].delay = delay;
 
             const col_start = x * self.rows;
 

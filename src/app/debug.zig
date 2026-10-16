@@ -4,7 +4,7 @@ const build = @import("build.zig.zon");
 
 const terminal_kit = @import("terminal_kit");
 
-const utils = terminal_kit.utils;
+const kit_time = terminal_kit.time;
 
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const RuntimeState = terminal_kit.runtime_state.RuntimeState;
@@ -40,7 +40,7 @@ pub fn print_debug(
     }
 
     const start_timestamp = state.start_timestamp.load(.acquire);
-    const time = try utils.milliseconds_to_time(scratch, end_ms - start_timestamp, null);
+    const time = try kit_time.milliseconds_to_time(scratch, end_ms - start_timestamp, null);
     defer scratch.free(time);
 
     var paused = false;
