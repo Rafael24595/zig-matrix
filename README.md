@@ -61,7 +61,7 @@ zig-out/bin/zig-matrix --help
 | `-v`, `--version` | Display the project version | — |
 | `-d` | Enable debug output | Disabled |
 | `-s` | Set the random seed | Current timestamp in milliseconds |
-| `-ms` | Set the frame delay in milliseconds | `50` |
+| `-ms` | Set the frame delay in milliseconds |  `55` ms on Windows; `65` ms on other platforms |
 | `-l` | Set the drop length | `0.4 × matrix height` |
 | `-tc` | Set the theme color | `green` |
 | `-tg` | Set the theme gradient | `default` |
@@ -171,11 +171,19 @@ Enable debug output with `-d` to inspect runtime information, including:
 - Gradient and matrix rendering mode
 - Matrix orientation and dimensions
 
+## Interactive Controls
+
+The simulation accepts keyboard input while running.
+
+| Key | Action |
+|---|---|
+| `p`, `Space` | Toggle pause and resume. The current frame remains visible while paused. |
+| `+` | Increase the frame delay by 10 ms, up to 3000 ms. |
+| `-` | Decrease the frame delay by 10 ms, down to 0 ms. |
+| `q`, `Ctrl+C` | Request a clean exit. |
+
+Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. Runtime flags use atomic operations to coordinate input and rendering.
+
 ## Shutdown and Signal Handling
 
-The application handles Ctrl+C to support a graceful shutdown.
-
-- **Windows:** Uses `SetConsoleCtrlHandler` to handle console control events.
-- **Unix/Linux:** Handles `SIGINT`.
-
-The shutdown path is intended to clean up console state and restore the cursor. Exact behavior may depend on how the process terminates and on the terminal environment.
+The application installs a signal handler and requests shutdown when an interrupt is received. During normal shutdown, cleanup routines attempt to restore the cursor and clear terminal output. Exact behavior may depend on the operating system, terminal emulator, and how the process terminates.
