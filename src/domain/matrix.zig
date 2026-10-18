@@ -73,6 +73,19 @@ pub const LinearMatrix = struct {
         };
     }
 
+    /// Releases the allocated matrix storage and column metadata.
+    pub fn free(self: *@This()) void {
+        if (self.mtrx) |mtrx| {
+            self.allocator.free(mtrx);
+            self.mtrx = null;
+        }
+
+        if (self.meta) |meta| {
+            self.allocator.free(meta);
+            self.meta = null;
+        }
+    }
+
     /// Allocates the matrix and initializes its symbols and column metadata.
     ///
     /// `cols` and `rows` specify the matrix dimensions. Column delays are
@@ -165,19 +178,6 @@ pub const LinearMatrix = struct {
 
             col.cursor = 0;
             col.loop += 1;
-        }
-    }
-
-    /// Releases the allocated matrix storage and column metadata.
-    pub fn free(self: *@This()) void {
-        if (self.mtrx) |mtrx| {
-            self.allocator.free(mtrx);
-            self.mtrx = null;
-        }
-
-        if (self.meta) |meta| {
-            self.allocator.free(meta);
-            self.meta = null;
         }
     }
 };

@@ -52,6 +52,15 @@ pub const ColorScale = struct {
         return self;
     }
 
+    /// Releases the color map and resets `map` to null.
+    /// Safe to call when the map is already null.
+    pub fn free(self: *@This()) void {
+        if (self.map) |m| {
+            self.allocator.free(m);
+            self.map = null;
+        }
+    }
+
     /// Returns the RGB value at `index`, or null if the map is unallocated
     /// or the index is out of bounds.
     pub inline fn find(self: @This(), index: usize) ?[3]u8 {
@@ -81,15 +90,6 @@ pub const ColorScale = struct {
         }
 
         return self.map.?.len;
-    }
-
-    /// Releases the color map and resets `map` to null.
-    /// Safe to call when the map is already null.
-    pub fn free(self: *@This()) void {
-        if (self.map) |m| {
-            self.allocator.free(m);
-            self.map = null;
-        }
     }
 
     inline fn scale_color_circular(index: usize, max: usize, mid: [3]u8) [3]u8 {
