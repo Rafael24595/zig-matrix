@@ -33,7 +33,7 @@ pub const Meta = struct {
 /// by this structure.
 pub const LinearMatrix = struct {
     /// Allocator used to allocate the matrix and metadata.
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
     /// Random number generator used to initialize column delays.
     lcg: *MiniLCG,
@@ -57,7 +57,13 @@ pub const LinearMatrix = struct {
 
     /// Creates a matrix using the provided allocator and borrowed dependencies.
     /// Does not allocate matrix storage until `build` is called.
-    pub fn init(allocator: *std.mem.Allocator, lcg: *MiniLCG, ascii: *AsciiGenerator, scale: *ColorScale, mode: Mode) @This() {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        lcg: *MiniLCG,
+        ascii: *AsciiGenerator,
+        scale: *ColorScale,
+        mode: Mode,
+    ) @This() {
         return LinearMatrix{
             .allocator = allocator,
             .lcg = lcg,
@@ -177,10 +183,10 @@ pub const LinearMatrix = struct {
 };
 
 test "next does nothing when the matrix is uninitialized" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
 
     var matrix = LinearMatrix.init(
-        &allocator,
+        allocator,
         undefined,
         undefined,
         undefined,
@@ -196,10 +202,10 @@ test "next does nothing when the matrix is uninitialized" {
 }
 
 test "free can be called multiple times" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
 
     var matrix = LinearMatrix.init(
-        &allocator,
+        allocator,
         undefined,
         undefined,
         undefined,
@@ -217,10 +223,10 @@ test "free can be called multiple times" {
 }
 
 test "free is safe before build" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
 
     var matrix = LinearMatrix.init(
-        &allocator,
+        allocator,
         undefined,
         undefined,
         undefined,
@@ -234,10 +240,10 @@ test "free is safe before build" {
 }
 
 test "next does nothing before build" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
 
     var matrix = LinearMatrix.init(
-        &allocator,
+        allocator,
         undefined,
         undefined,
         undefined,

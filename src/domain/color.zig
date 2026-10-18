@@ -13,7 +13,7 @@ pub const ThemeGradient = enum {
 /// from a base color and a gradient mode.
 pub const ColorScale = struct {
     /// Allocator used to allocate the color map.
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     /// Generated RGB entries, or null when no map is allocated.
     map: ?[][3]u8 = null,
 
@@ -25,7 +25,7 @@ pub const ColorScale = struct {
     /// `base` supplies the RGB color used by the selected gradient.
     /// The caller must release the allocated map with `free`.
     pub fn init(
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
         scale: usize,
         base: [3]u8,
         mode: ThemeGradient,
@@ -200,20 +200,22 @@ test "correct RGB values for known colors" {
 }
 
 test "init creates map with correct length" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
+    
     const base = [3]u8{ 128, 128, 128 };
-    var scale = try ColorScale.init(&allocator, 10, base, ThemeGradient.linear);
+    var scale = try ColorScale.init(allocator, 10, base, ThemeGradient.linear);
     defer scale.free();
 
     try std.testing.expectEqual(11, scale.len());
 }
 
 test "default mode generates a symmetric gradient" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
+
     const base = [3]u8{ 128, 64, 32 };
     const scale_size: usize = 6;
 
-    var scale = try ColorScale.init(&allocator, scale_size, base, ThemeGradient.default);
+    var scale = try ColorScale.init(allocator, scale_size, base, ThemeGradient.default);
     defer scale.free();
 
     const map = scale.map.?;
@@ -230,11 +232,12 @@ test "default mode generates a symmetric gradient" {
 }
 
 test "linear mode fades linearly towards black" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
+
     const base = [3]u8{ 200, 100, 50 };
     const scale_size: usize = 5;
 
-    var scale = try ColorScale.init(&allocator, scale_size, base, ThemeGradient.linear);
+    var scale = try ColorScale.init(allocator, scale_size, base, ThemeGradient.linear);
     defer scale.free();
 
     const map = scale.map.?;
@@ -247,11 +250,12 @@ test "linear mode fades linearly towards black" {
 }
 
 test "circular mode rises then falls symmetrically" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
+
     const base = [3]u8{ 255, 128, 64 };
     const scale_size: usize = 6;
 
-    var scale = try ColorScale.init(&allocator, scale_size, base, ThemeGradient.circular);
+    var scale = try ColorScale.init(allocator, scale_size, base, ThemeGradient.circular);
     defer scale.free();
 
     const map = scale.map.?;
@@ -265,9 +269,10 @@ test "circular mode rises then falls symmetrically" {
 }
 
 test "find and findUnsafe work correctly" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
+
     const base = [3]u8{ 100, 100, 100 };
-    var scale = try ColorScale.init(&allocator, 3, base, ThemeGradient.linear);
+    var scale = try ColorScale.init(allocator, 3, base, ThemeGradient.linear);
     defer scale.free();
 
     try std.testing.expect(scale.find(10) == null);
@@ -276,9 +281,10 @@ test "find and findUnsafe work correctly" {
 }
 
 test "free releases memory and resets map" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
+
     const base = [3]u8{ 255, 255, 255 };
-    var scale = try ColorScale.init(&allocator, 5, base, ThemeGradient.default);
+    var scale = try ColorScale.init(allocator, 5, base, ThemeGradient.default);
 
     scale.free();
     try std.testing.expectEqual(@as(usize, 0), scale.len());

@@ -164,7 +164,11 @@ pub const Configuration = struct {
     /// Uses `allocator` for temporary allocations and `printer` for
     /// formatting or reporting command-line information.
     /// Exits the process for help, version, or unknown arguments.
-    pub fn init(allocator: std.mem.Allocator, printer: *Printer, args: [][:0]u8) !@This() {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        args: [][:0]u8,
+    ) !@This() {
         defer printer.reset();
 
         var config = Configuration{};
