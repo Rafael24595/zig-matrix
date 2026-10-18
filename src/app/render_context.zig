@@ -27,7 +27,7 @@ pub const RenderContext = struct {
     /// Matrix containing the data to be rendered.
     matrix: LinearMatrix,
     /// Handles the formatting and output of the matrix.
-    matrixPrinter: LinearMatrixPrinter,
+    matrix_printer: LinearMatrixPrinter,
 
     /// Tracks the number of frames rendered and calculates the frame rate.
     counter: Counter,
@@ -81,7 +81,7 @@ pub const RenderContext = struct {
 
         try self.matrix.build(cols, rows);
 
-        self.matrixPrinter = try LinearMatrixPrinter.init(
+        self.matrix_printer = try LinearMatrixPrinter.init(
             allocator,
             printer,
             config.formatter,
@@ -90,7 +90,7 @@ pub const RenderContext = struct {
             isVertical,
         );
 
-        errdefer self.matrixPrinter.free();
+        errdefer self.matrix_printer.free();
 
         self.counter = Counter.init();
     }
@@ -100,7 +100,7 @@ pub const RenderContext = struct {
     /// Must be called after successful initialization.
     pub fn deinit(self: *@This()) void {
         self.matrix.free();
-        self.matrixPrinter.free();
+        self.matrix_printer.free();
         self.scale.free();
     }
 };

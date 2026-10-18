@@ -20,16 +20,21 @@ const SymbolGenerator = @import("domain/symbol.zig").SymbolGenerator;
 /// Initializes application resources, configures the terminal, and starts
 /// the rendering loop.
 pub fn main() !void {
-    const basePersistentAllocator = std.heap.page_allocator;
-    var persistentAllocator = AllocatorTracer.init(basePersistentAllocator);
+    var persistent = AllocatorTracer.init(
+        std.heap.page_allocator,
+    );
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
-    const baseScratchAllocator = gpa.allocator();
-    var scratchAllocator = AllocatorTracer.init(baseScratchAllocator);
+    var scratch = AllocatorTracer.init(
+        gpa.allocator(),
+    );
 
-    var arena = std.heap.ArenaAllocator.init(scratchAllocator.allocator());
+    var arena = std.heap.ArenaAllocator.init(
+        scratch.allocator(),
+    );
+    
     defer arena.deinit();
 
     var printer = Printer{
@@ -40,7 +45,7 @@ pub fn main() !void {
     defer printer.reset();
 
     const config = try configuration.from_args(
-        persistentAllocator.allocator(),
+        persistent.allocator(),
         &printer,
     );
 
@@ -57,8 +62,8 @@ pub fn main() !void {
 
     try run(
         &state,
-        &persistentAllocator,
-        &scratchAllocator,
+        &persistent,
+        &scratch,
         &config,
         &printer,
     );
@@ -68,8 +73,8 @@ pub fn main() !void {
 /// until termination is requested.
 inline fn run(
     state: *RuntimeState,
-    persistentAllocator: *AllocatorTracer,
-    scratchAllocator: *AllocatorTracer,
+    persistent: *AllocatorTracer,
+    scratch: *AllocatorTracer,
     config: *const configuration.Configuration,
     printer: *Printer,
 ) !void {
@@ -81,11 +86,11 @@ inline fn run(
         };
     }
 
-    var allocator = persistentAllocator.allocator();
+    const allocator = persistent.allocator();
 
     var lcg = MiniLCG.init(config.seed);
 
-    var asciiGenerator = SymbolGenerator.init(
+    var ascii_generator = SymbolGenerator.init(
         &lcg,
         config.symbol_mode,
     );
@@ -110,14 +115,14 @@ inline fn run(
         _ = state.consume_reload();
 
         try run_render_cycle(
-            &allocator,
-            persistentAllocator,
-            scratchAllocator,
+            allocator,
+            persistent,
+            scratch,
             state,
             config,
             printer,
             &lcg,
-            &asciiGenerator,
+            &ascii_generator,
         );
     }
 }
@@ -128,26 +133,26 @@ inline fn run(
 /// A terminal resize ends the current cycle so rendering can restart with
 /// updated dimensions.
 inline fn run_render_cycle(
-    allocator: *std.mem.Allocator,
-    persistentAllocator: *AllocatorTracer,
-    scratchAllocator: *AllocatorTracer,
+    allocator: std.mem.Allocator,
+    persistent: *AllocatorTracer,
+    scratch: *AllocatorTracer,
     state: *RuntimeState,
     config: *const configuration.Configuration,
     printer: *Printer,
     lcg: *MiniLCG,
-    asciiGenerator: *SymbolGenerator,
+    ascii_generator: *SymbolGenerator,
 ) !void {
     const winsize = try console.winsize();
 
     var context: RenderContext = undefined;
 
     try context.init(
-        allocator,
+        &allocator,
         winsize,
         config,
         printer,
         lcg,
-        asciiGenerator,
+        ascii_generator,
     );
 
     defer context.deinit();
@@ -160,15 +165,15 @@ inline fn run_render_cycle(
         if (config.debug) {
             try debug.print_debug(
                 state,
-                persistentAllocator,
-                scratchAllocator,
+                persistent,
+                scratch,
                 config,
                 printer,
                 &context,
             );
         }
 
-        try context.matrixPrinter.print(&context.matrix);
+        try context.matrix_printer.print(&context.matrix);
 
         if (!state.pause.load(.acquire)) {
             try context.matrix.next();
