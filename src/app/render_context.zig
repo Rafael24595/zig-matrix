@@ -20,7 +20,7 @@ const SymbolGenerator = @import("../domain/symbol.zig").SymbolGenerator;
 const color = @import("../domain/color.zig");
 
 /// Holds the resources and state required to render the matrix,
-/// including its color scale, matrix data, and output formatter.
+/// including its color scale, matrix data, output formatter and frame counter.
 pub const RenderContext = struct {
     /// Color scale used to render the matrix symbols.
     scale: color.ColorScale,

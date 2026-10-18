@@ -122,7 +122,7 @@ const FLAG_ORIENTATION_MODE: Flag = Flag{
 };
 
 /// Stores the application settings parsed from command-line arguments,
-/// including rendering options, animation timing, and matrix appearance.
+/// including rendering options, animation timing and matrix appearance.
 pub const Configuration = struct {
     /// Enables diagnostic information during execution.
     debug: bool = false,
