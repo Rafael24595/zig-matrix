@@ -6,7 +6,8 @@ const signals = terminal_kit.signals;
 const console = terminal_kit.console;
 const Printer = terminal_kit.printer.Printer;
 
-const RuntimeState = terminal_kit.runtime_state.RuntimeState;
+const runtime = terminal_kit.runtime_state;
+
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 
@@ -49,7 +50,7 @@ pub fn main() !void {
         &printer,
     );
 
-    var state = RuntimeState{};
+    var state = runtime.RuntimeState{};
 
     state.start_timestamp.store(config.start_ms, .release);
     state.speed_ms.store(config.milliseconds, .release);
@@ -72,13 +73,13 @@ pub fn main() !void {
 /// Runs the application session, coordinating input handling and rendering
 /// until termination is requested.
 inline fn run(
-    state: *RuntimeState,
+    state: *runtime.RuntimeState,
     persistent: *AllocatorTracer,
     scratch: *AllocatorTracer,
     config: *const configuration.Configuration,
     printer: *Printer,
 ) !void {
-    try signals.install(state, on_interrupt);
+    try signals.install(state, runtime.on_interrupt);
 
     defer {
         signals.uninstall() catch |err| {
@@ -111,7 +112,7 @@ inline fn run(
 
     defer input_thread.join();
 
-    while (!should_exit(state)) {
+    while (!runtime.should_exit(state)) {
         _ = state.consume_reload();
 
         try run_render_cycle(
@@ -136,7 +137,7 @@ inline fn run_render_cycle(
     allocator: std.mem.Allocator,
     persistent: *AllocatorTracer,
     scratch: *AllocatorTracer,
-    state: *RuntimeState,
+    state: *runtime.RuntimeState,
     config: *const configuration.Configuration,
     printer: *Printer,
     lcg: *MiniLCG,
@@ -159,7 +160,7 @@ inline fn run_render_cycle(
 
     try printer.print(console.CLEAN_CONSOLE);
 
-    while (!should_exit(state) and !should_reload(state)) {
+    while (!runtime.should_exit(state) and !runtime.should_reload(state)) {
         try printer.print(console.RESET_CURSOR);
 
         if (config.debug) {
@@ -197,10 +198,10 @@ inline fn run_render_cycle(
     }
 }
 
-fn run_input_loop(state: *RuntimeState) !void {
+fn run_input_loop(state: *runtime.RuntimeState) !void {
     const stdin = std.fs.File.stdin();
 
-    while (!should_exit(state)) {
+    while (!runtime.should_exit(state)) {
         var buf: [1]u8 = undefined;
 
         const count = try stdin.read(&buf);
@@ -228,17 +229,4 @@ fn run_input_loop(state: *RuntimeState) !void {
             else => {},
         }
     }
-}
-
-fn on_interrupt(context: *anyopaque) void {
-    const state: *RuntimeState = @ptrCast(@alignCast(context));
-    state.request_exit();
-}
-
-inline fn should_exit(state: *const RuntimeState) bool {
-    return state.exit.load(.acquire);
-}
-
-inline fn should_reload(state: *const RuntimeState) bool {
-    return state.reload.load(.acquire);
 }
