@@ -72,8 +72,8 @@ pub const LinearMatrixPrinter = struct {
     ///
     /// An uninitialized or empty matrix produces no output.
     /// Errors from buffer growth or the underlying printer are propagated.
-    pub fn print(self: *@This(), mtrx: *LinearMatrix) !void {
-        if (mtrx.vector() == null or mtrx.vector().?.len == 0) {
+    pub fn print(self: *@This(), matrix: *LinearMatrix) !void {
+        if (matrix.vector() == null or matrix.vector().?.len == 0) {
             return;
         }
 
@@ -87,9 +87,9 @@ pub const LinearMatrixPrinter = struct {
         }
 
         if (self.vertical) {
-            try self.print_vertical(mtrx);
+            try self.print_vertical(matrix);
         } else {
-            try self.print_horizontal(mtrx);
+            try self.print_horizontal(matrix);
         }
 
         if (sufix.len > 0) {
@@ -99,10 +99,7 @@ pub const LinearMatrixPrinter = struct {
         try self.printer.print(self.buffer.items);
     }
 
-    inline fn print_vertical(
-        self: *@This(),
-        mtrx: *LinearMatrix,
-    ) !void {
+    inline fn print_vertical(self: *@This(), mtrx: *LinearMatrix) !void {
         const matrix = mtrx.vector().?;
         const metadata = mtrx.metadata().?;
 
@@ -131,10 +128,7 @@ pub const LinearMatrixPrinter = struct {
         }
     }
 
-    inline fn print_horizontal(
-        self: *@This(),
-        mtrx: *LinearMatrix,
-    ) !void {
+    inline fn print_horizontal(self: *@This(), mtrx: *LinearMatrix) !void {
         const matrix = mtrx.vector().?;
         const metadata = mtrx.metadata().?;
 
