@@ -20,14 +20,14 @@ const SymbolGenerator = @import("../domain/symbol.zig").SymbolGenerator;
 const color = @import("../domain/color.zig");
 
 /// Holds the resources and state required to render the matrix,
-/// including its color scale, matrix data, and output formatter.
+/// including its color scale, matrix data, output formatter and frame counter.
 pub const RenderContext = struct {
     /// Color scale used to render the matrix symbols.
     scale: color.ColorScale,
     /// Matrix containing the data to be rendered.
     matrix: LinearMatrix,
     /// Handles the formatting and output of the matrix.
-    matrixPrinter: LinearMatrixPrinter,
+    matrix_printer: LinearMatrixPrinter,
 
     /// Tracks the number of frames rendered and calculates the frame rate.
     counter: Counter,
@@ -38,7 +38,7 @@ pub const RenderContext = struct {
     /// Returns an error if initialization or matrix construction fails.
     pub fn init(
         self: *@This(),
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
         winsize: console.WinSize,
         config: *const configuration.Configuration,
         printer: *Printer,
@@ -81,7 +81,7 @@ pub const RenderContext = struct {
 
         try self.matrix.build(cols, rows);
 
-        self.matrixPrinter = try LinearMatrixPrinter.init(
+        self.matrix_printer = try LinearMatrixPrinter.init(
             allocator,
             printer,
             config.formatter,
@@ -90,7 +90,7 @@ pub const RenderContext = struct {
             isVertical,
         );
 
-        errdefer self.matrixPrinter.free();
+        errdefer self.matrix_printer.free();
 
         self.counter = Counter.init();
     }
@@ -100,7 +100,7 @@ pub const RenderContext = struct {
     /// Must be called after successful initialization.
     pub fn deinit(self: *@This()) void {
         self.matrix.free();
-        self.matrixPrinter.free();
+        self.matrix_printer.free();
         self.scale.free();
     }
 };

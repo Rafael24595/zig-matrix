@@ -122,7 +122,7 @@ const FLAG_ORIENTATION_MODE: Flag = Flag{
 };
 
 /// Stores the application settings parsed from command-line arguments,
-/// including rendering options, animation timing, and matrix appearance.
+/// including rendering options, animation timing and matrix appearance.
 pub const Configuration = struct {
     /// Enables diagnostic information during execution.
     debug: bool = false,
@@ -164,7 +164,11 @@ pub const Configuration = struct {
     /// Uses `allocator` for temporary allocations and `printer` for
     /// formatting or reporting command-line information.
     /// Exits the process for help, version, or unknown arguments.
-    pub fn init(allocator: std.mem.Allocator, printer: *Printer, args: [][:0]u8) !@This() {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        printer: *Printer,
+        args: [][:0]u8,
+    ) !@This() {
         defer printer.reset();
 
         var config = Configuration{};
