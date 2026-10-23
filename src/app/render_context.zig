@@ -21,6 +21,9 @@ const color = @import("../domain/color.zig");
 
 /// Holds the resources and state required to render the matrix,
 /// including its color scale, matrix data, output formatter and frame counter.
+/// 
+/// Call `init` before using the context and `deinit` to release its
+/// resources after successful initialization.
 pub const RenderContext = struct {
     /// Color scale used to render the matrix symbols.
     scale: color.ColorScale,
