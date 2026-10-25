@@ -90,7 +90,7 @@ zig-out/bin/zig-matrix --help
 
 **Color mode (`-cm`)**
 
-`rgb`, `ansi`, `none`
+`rgb`, `ansi`, `unfo`
 
 **Orientation (`-o`)**
 
