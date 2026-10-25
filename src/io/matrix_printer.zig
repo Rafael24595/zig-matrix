@@ -1,11 +1,12 @@
 const std = @import("std");
 
+const formatter = @import("terminal_kit").formatter;
+
 const Printer = @import("terminal_kit").printer.Printer;
 
 const ColorScale = @import("../domain/color.zig").ColorScale;
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 const Meta = @import("../domain/matrix.zig").Meta;
-const Formatter = @import("formatter.zig").FormatterUnion;
 
 /// Renders a linear matrix as formatted terminal output.
 pub const LinearMatrixPrinter = struct {
@@ -17,7 +18,13 @@ pub const LinearMatrixPrinter = struct {
     /// Color scale used to map matrix positions to RGB values.
     scale: *ColorScale,
     /// Formatter used to encode each visible character.
-    formatter: Formatter,
+    formatter: formatter.FormatterCellUnion,
+
+    /// Format string used to prefix the entire matrix output.
+    prefix: []const u8,
+    /// Format string used to suffix the entire matrix output.
+    sufix: []const u8,
+
     /// Whether rows are rendered vertically rather than horizontally.
     vertical: bool,
 
@@ -33,7 +40,8 @@ pub const LinearMatrixPrinter = struct {
     pub fn init(
         allocator: std.mem.Allocator,
         printer: *Printer,
-        formatter: Formatter,
+        fmt_mtrx: formatter.FormatterMatrixUnion,
+        fmt_cell: formatter.FormatterCellUnion,
         scale: *ColorScale,
         matrix: *LinearMatrix,
         vertical: bool,
@@ -41,23 +49,25 @@ pub const LinearMatrixPrinter = struct {
         const rows = matrix.rows_len();
         const cols = matrix.cols_len();
 
-        const prefix = formatter.prefix();
-        const sufix = formatter.sufix();
+        const prefix = fmt_mtrx.prefix();
+        const sufix = fmt_mtrx.sufix();
 
-        const char_fmt_len = formatter.fmt_bytes() + matrix.max_char_bytes();
+        const char_fmt_len = fmt_cell.fmt_bytes() + matrix.max_char_bytes();
         const mtrx_fmt_len = rows * cols * char_fmt_len;
         const estimatedSize = prefix.len + mtrx_fmt_len + sufix.len;
 
         const buffer = try std.ArrayList(u8).initCapacity(allocator, estimatedSize);
         errdefer buffer.deinit(allocator);
 
-        const format = try allocator.alloc(u8, formatter.fmt_bytes());
+        const format = try allocator.alloc(u8, char_fmt_len);
 
         return .{
             .allocator = allocator,
             .printer = printer,
             .scale = scale,
-            .formatter = formatter,
+            .formatter = fmt_cell,
+            .prefix = prefix,
+            .sufix = sufix,
             .vertical = vertical,
             .buffer = buffer,
             .format = format,
@@ -81,9 +91,7 @@ pub const LinearMatrixPrinter = struct {
 
         self.buffer.clearRetainingCapacity();
 
-        const prefix = self.formatter.prefix();
-        const sufix = self.formatter.sufix();
-
+        const prefix = self.prefix;
         if (prefix.len > 0) {
             try self.buffer.appendSlice(self.allocator, prefix);
         }
@@ -94,6 +102,7 @@ pub const LinearMatrixPrinter = struct {
             try self.print_horizontal(matrix);
         }
 
+        const sufix = self.sufix;
         if (sufix.len > 0) {
             try self.buffer.appendSlice(self.allocator, sufix);
         }

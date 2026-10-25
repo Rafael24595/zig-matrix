@@ -87,7 +87,8 @@ pub const RenderContext = struct {
         self.matrix_printer = try LinearMatrixPrinter.init(
             allocator,
             printer,
-            config.formatter,
+            config.formatter_matrix,
+            config.formatter_cell,
             &self.scale,
             &self.matrix,
             isVertical,

@@ -63,7 +63,7 @@ pub fn print_debug(
         config.symbol_mode,
         config.rainColor,
         config.matrix_mode,
-        config.formatter.code(),
+        @tagName(config.color_mode),
         config.orientation,
     });
 
