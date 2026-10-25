@@ -74,7 +74,7 @@ zig-out/bin/zig-matrix --help
 
 **Color (`-tc`)**
 
-`white`, `black`, `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`, `orange`, `purple`, `gray`, `pink`, `brown`, `aqua`, `navy`, `teal`, `lavender`, `lime`, `coral`, `gold`, `neon_pink`, `neon_green`, `neon_blue`, `neon_yellow`, `neon_orange`, `neon_purple`, `neon_cyan`, `neon_red`
+`white`, `black`, `red`, `green`, `green_dark`, `green_medium`, `green_bright`, `green_olive`, `green_moss`, `blue`, `yellow`, `cyan`, `magenta`, `orange`, `purple`, `deep_purple`, `hot_purple`, `gray`, `gray_dark`, `gray_light`, `pink`, `brown`, `aqua`, `navy`, `teal`, `lavender`, `pale_lavender`, `violet`, `lime`, `coral`, `gold`, `neon_pink`, `neon_green`, `neon_blue`, `neon_yellow`, `neon_orange`, `neon_purple`, `neon_cyan`, `neon_red`
 
 **Gradient (`-tg`)**
 
@@ -90,7 +90,7 @@ zig-out/bin/zig-matrix --help
 
 **Color mode (`-cm`)**
 
-`rgb`, `ansi`, `none`
+`rgb`, `ansi`, `unfo`
 
 **Orientation (`-o`)**
 

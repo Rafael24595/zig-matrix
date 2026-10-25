@@ -44,10 +44,7 @@ pub fn print_debug(
     const time = try kit_time.milliseconds_to_time(allocator, end_ms - start_timestamp, null);
     defer allocator.free(time);
 
-    var paused = false;
-    if (state.pause.load(.acquire)) {
-        paused = true;
-    }
+    const paused = state.pause.load(.acquire);
 
     try printer.printf("{}: {s}\n", .{
         build.name,
@@ -66,7 +63,7 @@ pub fn print_debug(
         config.symbol_mode,
         config.rainColor,
         config.matrix_mode,
-        config.formatter.code(),
+        @tagName(config.color_mode),
         config.orientation,
     });
 

@@ -10,6 +10,7 @@ const Printer = terminal_kit.printer.Printer;
 const Flag = terminal_kit.configuration.Flag;
 const kit_conf = terminal_kit.configuration;
 
+const kit_formatter = terminal_kit.formatter;
 const kit_color = terminal_kit.color;
 
 const symbol = @import("../domain/symbol.zig");
@@ -19,6 +20,12 @@ const matrix = @import("../domain/matrix.zig");
 const orientation = @import("../domain/orientation.zig");
 
 const formatter = @import("../io/formatter.zig");
+
+pub const InitResult = union(enum) {
+    run: Configuration,
+    inf: void,
+    err: []u8,
+};
 
 const frame_pause_ms: u64 = switch (builtin.os.tag) {
     .windows => 55,
@@ -153,8 +160,13 @@ pub const Configuration = struct {
     /// Behavior used to generate matrix contents.
     matrix_mode: matrix.Mode = .rain,
 
-    /// Formatter used to produce the matrix colors.
-    formatter: formatter.FormatterUnion = formatter.FormatterUnion{ .rgb = .{} },
+    /// Color formatting mode used by the output formatters.
+    color_mode: formatter.FormatterCode = .rgb,
+
+    /// Formatter configuration for the matrix output.
+    formatter_matrix: kit_formatter.FormatterMatrixUnion = formatter.matrix_union_of(.rgb),
+    /// Formatter configuration for individual cells.
+    formatter_cell: kit_formatter.FormatterCellUnion = formatter.cell_union_of(.rgb),
 
     /// Direction in which the matrix is rendered.
     orientation: orientation.Orientation = .vertical,
@@ -168,9 +180,7 @@ pub const Configuration = struct {
         allocator: std.mem.Allocator,
         printer: *Printer,
         args: [][:0]u8,
-    ) !@This() {
-        defer printer.reset();
-
+    ) !kit_conf.InitResult(Configuration) {
         var config = Configuration{};
 
         var i: usize = 1;
@@ -179,12 +189,12 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, FLAG_HELP.flag_short) or std.mem.eql(u8, arg, FLAG_HELP.flag_long.?)) {
                 try print_help(allocator, printer, config);
-                std.process.exit(0);
+                return .inf;
             }
 
             if (std.mem.eql(u8, arg, FLAG_VERSION.flag_short) or std.mem.eql(u8, arg, FLAG_VERSION.flag_long.?)) {
                 try printer.printf("{any}: {s}\n", .{ build.name, build.version });
-                std.process.exit(0);
+                return .inf;
             }
 
             if (std.mem.eql(u8, arg, FLAG_DEBUG.flag_short)) {
@@ -240,8 +250,9 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_COLOR_MODE.flag_short)) {
-                const code = try kit_conf.parse_enum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
-                config.formatter = formatter.union_of(code);
+                config.color_mode = try kit_conf.parse_enum(formatter.FormatterCode, printer, args, i, FLAG_COLOR_MODE);
+                config.formatter_matrix = formatter.matrix_union_of(config.color_mode);
+                config.formatter_cell = formatter.cell_union_of(config.color_mode);
                 i += 1;
                 continue;
             }
@@ -252,8 +263,9 @@ pub const Configuration = struct {
                 continue;
             }
 
-            try printer.printf("Unknown argument: {s}\n", .{arg});
-            std.process.exit(1);
+            return .{
+                .err = try printer.format("\nUnknown argument: {s}\n", .{arg}),
+            };
         }
 
         const timestamp = std.time.milliTimestamp();
@@ -264,7 +276,7 @@ pub const Configuration = struct {
             config.seed = @intCast(timestamp);
         }
 
-        return config;
+        return .{ .run = config };
     }
 
     inline fn print_help(
@@ -360,7 +372,7 @@ pub const Configuration = struct {
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
             FLAG_COLOR_MODE,
-            .{ .str = @tagName(config.formatter.code()) },
+            .{ .str = @tagName(config.color_mode) },
         ));
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
@@ -378,9 +390,12 @@ pub const Configuration = struct {
 /// Allocates the argument list using `allocator` and releases it before
 /// returning. Propagates errors from argument allocation and parsing.
 pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
-    return Configuration.init(allocator, printer, args);
+    return kit_conf.from_args(
+        Configuration,
+        allocator,
+        printer,
+        Configuration.init,
+    );
 }
 
 test "Configuration uses the expected default values" {
@@ -402,5 +417,5 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(matrix.Mode.rain, config.matrix_mode);
     try std.testing.expectEqual(orientation.Orientation.vertical, config.orientation);
 
-    try std.testing.expectEqual(formatter.FormatterCode.rgb, config.formatter.code());
+    try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
 }
