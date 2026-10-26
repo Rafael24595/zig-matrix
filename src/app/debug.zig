@@ -40,7 +40,7 @@ pub fn print_debug(
     }
 
     const start_timestamp = state.start_timestamp.load(.acquire);
-    
+
     const time = try kit_time.milliseconds_to_time(allocator, end_ms - start_timestamp, null);
     defer allocator.free(time);
 
@@ -63,7 +63,7 @@ pub fn print_debug(
         config.symbol_mode,
         config.rainColor,
         config.matrix_mode,
-        @tagName(config.color_mode),
+        config.color_mode,
         config.orientation,
     });
 
