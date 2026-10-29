@@ -177,18 +177,13 @@ pub const LinearMatrixPrinter = struct {
         x: usize,
         y: usize,
     ) !void {
-        if (meta.delay > 0) {
+        const render = should_render_cell(meta, x);
+        if (!render) {
             try self.buffer.append(self.allocator, ' ');
             return;
         }
 
-        const cursor = meta.cursor;
-        if (meta.loop == 0 and cursor < x) {
-            try self.buffer.append(self.allocator, ' ');
-            return;
-        }
-
-        const scaleIndex = (rows + cursor - x) % rows;
+        const scaleIndex = (rows + meta.cursor - x) % rows;
 
         const color = self.scale.find_unsafe(scaleIndex) orelse {
             try self.buffer.append(self.allocator, ' ');
@@ -204,5 +199,17 @@ pub const LinearMatrixPrinter = struct {
         );
 
         try self.buffer.appendSlice(self.allocator, formatted);
+    }
+
+    inline fn should_render_cell(meta: Meta, x: usize) bool {
+        if (meta.delay > 0) {
+            return false;
+        }
+
+        if (meta.loop == 0 and meta.cursor < x) {
+            return false;
+        }
+
+        return true;
     }
 };
