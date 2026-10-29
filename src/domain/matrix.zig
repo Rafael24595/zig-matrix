@@ -157,13 +157,12 @@ pub const LinearMatrix = struct {
     /// completed-cycle counter is incremented. Does nothing if the matrix
     /// has not been allocated.
     pub fn next(self: *@This()) !void {
-        if (self.mtrx == null) {
-            return;
+        if (comptime std.debug.runtime_safety) {
+            std.debug.assert(self.mtrx != null);
+            std.debug.assert(self.meta != null);
         }
 
-        std.debug.assert(self.meta != null);
-
-        const meta = self.meta.?;
+        const meta = self.meta orelse return;
 
         for (meta) |*col| {
             if (col.delay > 0) {
