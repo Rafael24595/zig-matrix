@@ -110,12 +110,12 @@ pub const LinearMatrixPrinter = struct {
         try self.printer.print(self.buffer.items);
     }
 
-    inline fn print_vertical(self: *@This(), mtrx: *LinearMatrix) !void {
-        const matrix = mtrx.vector().?;
-        const metadata = mtrx.metadata().?;
+    inline fn print_vertical(self: *@This(), matrix: *LinearMatrix) !void {
+        const vector = matrix.vector().?;
+        const metadata = matrix.metadata().?;
 
-        const rows = mtrx.rows_len();
-        const cols = mtrx.cols_len();
+        const rows = matrix.rows_len();
+        const cols = matrix.cols_len();
 
         for (0..rows) |x| {
             const col_start = x * cols;
@@ -124,7 +124,7 @@ pub const LinearMatrixPrinter = struct {
                 const meta = metadata[y];
 
                 try self.print_cell(
-                    matrix,
+                    vector,
                     meta,
                     rows,
                     col_start,
@@ -139,12 +139,12 @@ pub const LinearMatrixPrinter = struct {
         }
     }
 
-    inline fn print_horizontal(self: *@This(), mtrx: *LinearMatrix) !void {
-        const matrix = mtrx.vector().?;
-        const metadata = mtrx.metadata().?;
+    inline fn print_horizontal(self: *@This(), matrix: *LinearMatrix) !void {
+        const vector = matrix.vector().?;
+        const metadata = matrix.metadata().?;
 
-        const rows = mtrx.rows_len();
-        const cols = mtrx.cols_len();
+        const rows = matrix.rows_len();
+        const cols = matrix.cols_len();
 
         for (0..cols) |y| {
             const meta = metadata[y];
@@ -153,7 +153,7 @@ pub const LinearMatrixPrinter = struct {
                 const col_start = x * cols;
 
                 try self.print_cell(
-                    matrix,
+                    vector,
                     meta,
                     rows,
                     col_start,
@@ -170,7 +170,7 @@ pub const LinearMatrixPrinter = struct {
 
     inline fn print_cell(
         self: *@This(),
-        matrix: [][]const u8,
+        vector: [][]const u8,
         meta: Meta,
         rows: usize,
         col_start: usize,
@@ -195,7 +195,7 @@ pub const LinearMatrixPrinter = struct {
             color[0],
             color[1],
             color[2],
-            matrix[col_start + y],
+            vector[col_start + y],
         );
 
         try self.buffer.appendSlice(self.allocator, formatted);
