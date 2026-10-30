@@ -18,6 +18,7 @@ const color = @import("../domain/color.zig");
 
 const matrix = @import("../domain/matrix.zig");
 const orientation = @import("../domain/orientation.zig");
+const flux = @import("../domain/flux.zig");
 
 const formatter = @import("../io/formatter.zig");
 
@@ -128,6 +129,14 @@ const FLAG_ORIENTATION_MODE: Flag = Flag{
     .aux_desc = "(vertical or horizontal)",
 };
 
+const FLAG_FLUX_MODE: Flag = Flag{
+    .flag_short = "-f",
+    .type = "<enum>",
+    .desc = "Matrix flux",
+    .name = "flux",
+    .aux_desc = "(normal or reverse)",
+};
+
 /// Stores the application settings parsed from command-line arguments,
 /// including rendering options, animation timing and matrix appearance.
 pub const Configuration = struct {
@@ -170,6 +179,8 @@ pub const Configuration = struct {
 
     /// Direction in which the matrix is rendered.
     orientation: orientation.Orientation = .vertical,
+    /// Direction in which the matrix flows.
+    flux: flux.Flux = .normal,
 
     /// Parses command-line arguments into a configuration.
     ///
@@ -259,6 +270,12 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, FLAG_ORIENTATION_MODE.flag_short)) {
                 config.orientation = try kit_conf.parse_enum(orientation.Orientation, printer, args, i, FLAG_ORIENTATION_MODE);
+                i += 1;
+                continue;
+            }
+
+            if (std.mem.eql(u8, arg, FLAG_FLUX_MODE.flag_short)) {
+                config.flux = try kit_conf.parse_enum(flux.Flux, printer, args, i, FLAG_FLUX_MODE);
                 i += 1;
                 continue;
             }
@@ -379,6 +396,12 @@ pub const Configuration = struct {
             printer,
             FLAG_ORIENTATION_MODE,
             .{ .str = @tagName(config.orientation) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_FLUX_MODE,
+            .{ .str = @tagName(config.flux) },
         ));
 
         return buffer.items;

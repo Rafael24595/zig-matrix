@@ -8,6 +8,8 @@ const testing = std.testing;
 pub const GameState = struct {
     /// Indicates whether a drain has been requested.
     drain: std.atomic.Value(bool) = .init(false),
+    /// Indicates whether a flux has been requested.
+    flux: std.atomic.Value(bool) = .init(false),
 
     /// Requests a drain, setting the drain flag to true.
     pub fn request_drain(self: *@This()) void {
@@ -18,11 +20,22 @@ pub const GameState = struct {
     pub fn consume_drain(self: *@This()) bool {
         return self.drain.swap(false, .acq_rel);
     }
+
+    /// Requests a flux, setting the flux flag to true.
+    pub fn request_flux(self: *@This()) void {
+        self.flux.store(true, .release);
+    }
+
+    /// Consumes the flux request, returning true if a flux was requested and resetting the flag to false.
+    pub fn consume_flux(self: *@This()) bool {
+        return self.flux.swap(false, .acq_rel);
+    }
 };
 
 test "GameState initial state is false" {
     var state = GameState{};
     try std.testing.expect(!state.drain.load(.monotonic));
+    try std.testing.expect(!state.flux.load(.monotonic));
 }
 
 test "request_drain sets drain to true" {
@@ -50,4 +63,31 @@ test "consume_drain returns true when requested and resets flag to false" {
     try std.testing.expect(consumed);
     try std.testing.expect(!state.drain.load(.monotonic));
     try std.testing.expect(!state.consume_drain());
+}
+
+test "request_flux sets flux to true" {
+    var state = GameState{};
+    state.request_flux();
+
+    try std.testing.expect(state.flux.load(.monotonic));
+}
+
+test "consume_flux returns false when not requested and keeps it false" {
+    var state = GameState{};
+
+    const consumed = state.consume_flux();
+
+    try std.testing.expect(!consumed);
+    try std.testing.expect(!state.flux.load(.monotonic));
+}
+
+test "consume_flux returns true when requested and resets flag to false" {
+    var state = GameState{};
+    state.request_flux();
+
+    const consumed = state.consume_flux();
+
+    try std.testing.expect(consumed);
+    try std.testing.expect(!state.flux.load(.monotonic));
+    try std.testing.expect(!state.consume_flux());
 }

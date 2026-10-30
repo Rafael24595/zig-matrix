@@ -21,7 +21,7 @@ const color = @import("../domain/color.zig");
 
 /// Holds the resources and state required to render the matrix,
 /// including its color scale, matrix data, output formatter and frame counter.
-/// 
+///
 /// Call `init` before using the context and `deinit` to release its
 /// resources after successful initialization.
 pub const RenderContext = struct {
@@ -61,6 +61,11 @@ pub const RenderContext = struct {
         else
             winsize.cols;
 
+        const reverse = switch (config.flux) {
+            .normal => false,
+            .reverse => true,
+        };
+
         const drop = calculate_drop_lenght(config, rows);
 
         self.scale = try color.ColorScale.init(
@@ -92,6 +97,7 @@ pub const RenderContext = struct {
             &self.scale,
             &self.matrix,
             is_vertical,
+            reverse,
         );
 
         errdefer self.matrix_printer.free();

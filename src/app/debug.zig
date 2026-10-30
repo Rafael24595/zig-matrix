@@ -13,6 +13,7 @@ const Printer = terminal_kit.printer.Printer;
 const configuration = @import("../configuration/configuration.zig");
 
 const RenderContext = @import("./render_context.zig").RenderContext;
+const Flux = @import("../domain/flux.zig").Flux;
 
 /// Prints diagnostic information about the application, runtime state,
 /// memory usage, rendering configuration, and current matrix dimensions.
@@ -46,7 +47,12 @@ pub fn print_debug(
 
     const paused = state.pause.load(.acquire);
 
-    try printer.printf("{}: {s}\n", .{
+    const flux: Flux = if (context.matrix_printer.reverse)
+        .reverse
+    else
+        .normal;
+
+    try printer.printf("{}: {s} \n", .{
         build.name,
         build.version,
     });
@@ -58,16 +64,17 @@ pub fn print_debug(
         context.counter.get_frame_rate(std.time.ms_per_s),
     });
 
-    try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any}\n", .{
+    try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any} | Flux: {any} \n", .{
         state.speed_ms.load(.acquire),
         config.symbol_mode,
         config.rain_color,
         config.matrix_mode,
         config.color_mode,
         config.orientation,
+        flux,
     });
 
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop length: {d} | Drain: {any} | Time: {s}\n", .{
+    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop length: {d} | Drain: {any} | Time: {s} \n", .{
         config.seed,
         area,
         cols,

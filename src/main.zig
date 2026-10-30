@@ -189,6 +189,10 @@ inline fn run_render_cycle(
             context.matrix.toggle_pause();
         }
 
+        if (game_state.consume_flux()) {
+            context.matrix_printer.toggle_reverse();
+        }
+
         try printer.print(console.RESET_CURSOR);
 
         if (config.debug) {
@@ -245,6 +249,9 @@ fn run_input_loop(
             },
             's', 'S' => {
                 game_state.request_drain();
+            },
+            'f', 'F' => {
+                game_state.request_flux();
             },
             '+' => {
                 state.mod_speed(10);

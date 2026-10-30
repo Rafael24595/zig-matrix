@@ -27,6 +27,8 @@ pub const LinearMatrixPrinter = struct {
 
     /// Whether rows are rendered vertically rather than horizontally.
     vertical: bool,
+    /// Whether the matrix is rendered in reverse order.
+    reverse: bool,
 
     /// Accumulates the complete formatted frame before output.
     buffer: std.ArrayList(u8),
@@ -45,6 +47,7 @@ pub const LinearMatrixPrinter = struct {
         scale: *ColorScale,
         matrix: *LinearMatrix,
         vertical: bool,
+        reverse: bool,
     ) !@This() {
         const rows = matrix.rows_len();
         const cols = matrix.cols_len();
@@ -69,6 +72,7 @@ pub const LinearMatrixPrinter = struct {
             .prefix = prefix,
             .sufix = sufix,
             .vertical = vertical,
+            .reverse = reverse,
             .buffer = buffer,
             .format = format,
         };
@@ -78,6 +82,11 @@ pub const LinearMatrixPrinter = struct {
     pub fn free(self: *@This()) void {
         self.buffer.deinit(self.allocator);
         self.allocator.free(self.format);
+    }
+
+    /// Toggles the reverse rendering mode of the matrix printer.
+    pub fn toggle_reverse(self: *@This()) void {
+        self.reverse = !self.reverse;
     }
 
     /// Formats and emits the current matrix frame.
@@ -111,16 +120,32 @@ pub const LinearMatrixPrinter = struct {
     }
 
     inline fn print_vertical(self: *@This(), matrix: *LinearMatrix) !void {
+        if (self.reverse) {
+            try self.print_vertical_impl(matrix, true);
+        } else {
+            try self.print_vertical_impl(matrix, false);
+        }
+    }
+
+    inline fn print_vertical_impl(
+        self: *@This(),
+        matrix: *LinearMatrix,
+        comptime reverse: bool,
+    ) !void {
         const vector = matrix.vector().?;
         const metadata = matrix.metadata().?;
 
         const rows = matrix.rows_len();
         const cols = matrix.cols_len();
 
-        for (0..rows) |x| {
+        for (0..rows) |j| {
+            const x = if (reverse) (rows - 1 - j) else j;
+
             const col_start = x * cols;
 
-            for (0..cols) |y| {
+            for (0..cols) |i| {
+                const y = if (reverse) (cols - 1 - i) else i;
+
                 const meta = metadata[y];
 
                 try self.print_cell(
@@ -133,23 +158,39 @@ pub const LinearMatrixPrinter = struct {
                 );
             }
 
-            if (x < rows - 1) {
+            if (j < rows - 1) {
                 try self.buffer.append(self.allocator, '\n');
             }
         }
     }
 
     inline fn print_horizontal(self: *@This(), matrix: *LinearMatrix) !void {
+        if (self.reverse) {
+            try self.print_horizontal_impl(matrix, true);
+        } else {
+            try self.print_horizontal_impl(matrix, false);
+        }
+    }
+
+    inline fn print_horizontal_impl(
+        self: *@This(),
+        matrix: *LinearMatrix,
+        comptime reverse: bool,
+    ) !void {
         const vector = matrix.vector().?;
         const metadata = matrix.metadata().?;
 
         const rows = matrix.rows_len();
         const cols = matrix.cols_len();
 
-        for (0..cols) |y| {
+        for (0..cols) |i| {
+            const y = if (reverse) (cols - 1 - i) else i;
+
             const meta = metadata[y];
 
-            for (0..rows) |x| {
+            for (0..rows) |j| {
+                const x = if (reverse) (rows - 1 - j) else j;
+
                 const col_start = x * cols;
 
                 try self.print_cell(
@@ -162,7 +203,7 @@ pub const LinearMatrixPrinter = struct {
                 );
             }
 
-            if (y < cols - 1) {
+            if (i < cols - 1) {
                 try self.buffer.append(self.allocator, '\n');
             }
         }
