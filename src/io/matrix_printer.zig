@@ -217,3 +217,113 @@ pub const LinearMatrixPrinter = struct {
         return true;
     }
 };
+
+test "should_render_cell returns false when delay is positive" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 1,
+        .loop = 1,
+        .pause_pending = false,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 5),
+    );
+}
+
+test "should_render_cell handles initial loop (loop == 0) and cursor position" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 0,
+        .loop = 0,
+        .pause_pending = false,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 3),
+    );
+}
+
+test "should_render_cell handles completed loops (loop > 0) without pause pending" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 0,
+        .loop = 1,
+        .pause_pending = false,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 5),
+    );
+}
+
+test "should_render_cell handles pause_pending behavior" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 0,
+        .loop = 1,
+        .pause_pending = true,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 3),
+    );
+}
+
+test "should_render_cell combines loop == 0 and pause_pending correctly" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 0,
+        .loop = 0,
+        .pause_pending = true,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 3),
+    );
+}

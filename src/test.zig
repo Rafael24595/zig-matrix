@@ -9,4 +9,5 @@ test {
     _ = @import("domain/symbol.zig");
 
     _ = @import("io/formatter.zig");
+    _ = @import("io/matrix_printer.zig");
 }
