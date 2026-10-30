@@ -152,7 +152,7 @@ pub const Configuration = struct {
     drop_len: usize = 0,
 
     /// Base color used for the rain effect.
-    rainColor: kit_color.Color = .green,
+    rain_color: kit_color.Color = .green,
     /// Gradient applied to the rain effect.
     rain_mode: color.ThemeGradient = .default,
     /// Theme used to generate matrix symbols.
@@ -226,7 +226,7 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_THEME_COLOR.flag_short)) {
-                config.rainColor = try kit_conf.parse_enum(kit_color.Color, printer, args, i, FLAG_THEME_COLOR);
+                config.rain_color = try kit_conf.parse_enum(kit_color.Color, printer, args, i, FLAG_THEME_COLOR);
                 i += 1;
                 continue;
             }
@@ -348,7 +348,7 @@ pub const Configuration = struct {
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
             FLAG_THEME_COLOR,
-            .{ .str = @tagName(config.rainColor) },
+            .{ .str = @tagName(config.rain_color) },
         ));
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
@@ -411,7 +411,7 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(@as(f32, 0.4), config.drop_per);
     try std.testing.expectEqual(@as(usize, 0), config.drop_len);
 
-    try std.testing.expectEqual(kit_color.Color.green, config.rainColor);
+    try std.testing.expectEqual(kit_color.Color.green, config.rain_color);
     try std.testing.expectEqual(color.ThemeGradient.default, config.rain_mode);
     try std.testing.expectEqual(symbol.Theme.default, config.symbol_mode);
     try std.testing.expectEqual(matrix.Mode.rain, config.matrix_mode);

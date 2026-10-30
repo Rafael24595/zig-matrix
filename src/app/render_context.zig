@@ -49,14 +49,14 @@ pub const RenderContext = struct {
         asciiGenerator: *SymbolGenerator,
     ) !void {
         const space = calculate_padding(config);
-        const isVertical = config.orientation == .vertical;
+        const is_vertical = config.orientation == .vertical;
 
-        const cols = if (isVertical)
+        const cols = if (is_vertical)
             winsize.cols
         else
             winsize.rows - space;
 
-        const rows = if (isVertical)
+        const rows = if (is_vertical)
             winsize.rows - space
         else
             winsize.cols;
@@ -66,7 +66,7 @@ pub const RenderContext = struct {
         self.scale = try color.ColorScale.init(
             allocator,
             drop,
-            kit_color.rgb_of(config.rainColor),
+            kit_color.rgb_of(config.rain_color),
             config.rain_mode,
         );
 
@@ -91,7 +91,7 @@ pub const RenderContext = struct {
             config.formatter_cell,
             &self.scale,
             &self.matrix,
-            isVertical,
+            is_vertical,
         );
 
         errdefer self.matrix_printer.free();

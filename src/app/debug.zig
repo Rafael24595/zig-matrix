@@ -61,7 +61,7 @@ pub fn print_debug(
     try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any}\n", .{
         state.speed_ms.load(.acquire),
         config.symbol_mode,
-        config.rainColor,
+        config.rain_color,
         config.matrix_mode,
         config.color_mode,
         config.orientation,
