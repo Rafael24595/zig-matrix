@@ -183,9 +183,9 @@ pub const LinearMatrixPrinter = struct {
             return;
         }
 
-        const scaleIndex = (rows + meta.cursor - x) % rows;
+        const scale_index = (rows + meta.cursor - x) % rows;
 
-        const color = self.scale.find_unsafe(scaleIndex) orelse {
+        const color = self.scale.find_unsafe(scale_index) orelse {
             try self.buffer.append(self.allocator, ' ');
             return;
         };
