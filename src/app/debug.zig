@@ -67,12 +67,13 @@ pub fn print_debug(
         config.orientation,
     });
 
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d} | Time: {s} \n", .{
+    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop length: {d} | Drain: {any} | Time: {s}\n", .{
         config.seed,
         area,
         cols,
         rows,
         config.drop_len,
+        matrix.pause_requested,
         time,
     });
 }

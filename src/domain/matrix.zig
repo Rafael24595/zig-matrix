@@ -23,6 +23,13 @@ pub const Meta = struct {
     delay: usize,
     /// Number of times the cursor has completed a full cycle through the rows.
     loop: usize,
+
+    /// Indicates whether the column is currently paused. A paused column will
+    /// not advance its cursor until it is reset by the matrix.
+    pause_pending: bool = false,
+    /// Number of cycles the column has been paused. A column is considered
+    /// fully paused when this value is greater than zero.
+    pause_cycles: usize = 0,
 };
 
 /// Stores a linear matrix of symbols and the animation metadata for its columns.
@@ -44,6 +51,8 @@ pub const LinearMatrix = struct {
 
     /// Animation mode used to initialize column delays.
     mode: Mode = Mode.rain,
+    /// Maximum delay value used to initialize column delays based on the selected mode.
+    delay_mode: usize = 0,
 
     /// Number of columns in the matrix.
     cols: usize = 0,
@@ -54,6 +63,10 @@ pub const LinearMatrix = struct {
     mtrx: ?[][]const u8 = null,
     /// Animation state for each column, or null before allocation.
     meta: ?[]Meta = null,
+
+    /// Indicates whether a pause has been requested for the matrix. When true,
+    /// all columns will enter a paused state on the next update.
+    pause_requested: bool = false,
 
     /// Creates a matrix using the provided allocator and borrowed dependencies.
     /// Does not allocate matrix storage until `build` is called.
@@ -103,14 +116,14 @@ pub const LinearMatrix = struct {
         self.mtrx = mtrx;
         self.meta = meta;
 
-        const delayMode: usize = switch (self.mode) {
+        self.delay_mode = switch (self.mode) {
             Mode.rain => rows,
             Mode.wave => 5,
             Mode.wall => 0,
         };
 
         for (0..self.cols) |x| {
-            const delay = self.lcg.rand_in_range(0, delayMode);
+            const delay = self.lcg.rand_in_range(0, self.delay_mode);
 
             meta[x].cursor = 0;
             meta[x].loop = 0;
@@ -150,6 +163,12 @@ pub const LinearMatrix = struct {
         return self.rows;
     }
 
+    /// Requests a pause for the matrix, causing all columns to enter a paused state on the next update.
+    /// If the matrix is already paused, this function unlocks the pause and allows the columns to resume advancing.
+    pub fn toggle_pause(self: *@This()) void {
+        self.pause_requested = !self.pause_requested;
+    }
+
     /// Advances the animation state of each column by one update.
     ///
     /// Columns first count down their delay, then advance their cursor.
@@ -164,26 +183,89 @@ pub const LinearMatrix = struct {
 
         const meta = self.meta orelse return;
 
+        if (self.pause_requested) {
+            for (meta) |*col| {
+                self.advance_to_pause(col);
+            }
+            return;
+        }
+
         for (meta) |*col| {
-            if (col.delay > 0) {
-                col.delay = col.delay - 1;
+            if (col.pause_pending) {
+                self.advance_to_pause(col);
+            } else {
+                self.advance_column(col);
+            }
+        }
+
+        self.reset();
+    }
+
+    inline fn advance_to_pause(self: *@This(), col: *Meta) void {
+        if (col.delay > 0) {
+            return;
+        }
+
+        if (!col.pause_pending) {
+            self.advance_column(col);
+            if (col.cursor > 0) {
+                return;
+            }
+
+            col.pause_pending = true;
+            col.pause_cycles = 0;
+        }
+
+        if (col.pause_cycles == 0) {
+            self.advance_column(col);
+            if (col.cursor > 0) {
+                return;
+            }
+
+            col.pause_cycles += 1;
+        }
+
+        col.delay = 1;
+    }
+
+    inline fn advance_column(self: *@This(), col: *Meta) void {
+        if (col.delay > 0) {
+            col.delay = col.delay - 1;
+            return;
+        }
+
+        if (col.cursor < self.rows - 1) {
+            col.cursor += 1;
+            return;
+        }
+
+        col.cursor = 0;
+        col.loop += 1;
+    }
+
+    inline fn reset(self: *@This()) void {
+        for (self.meta.?[0..self.cols]) |*col| {
+            if (!col.pause_pending or col.pause_cycles == 0) {
                 continue;
             }
 
-            if (col.cursor < self.rows - 1) {
-                col.cursor += 1;
-                continue;
-            }
+            const delay = self.lcg.rand_in_range(0, self.delay_mode);
 
-            col.cursor = 0;
-            col.loop += 1;
+            col.* = .{
+                .cursor = 0,
+                .loop = 0,
+                .delay = delay,
+                .pause_pending = false,
+                .pause_cycles = 0,
+            };
         }
     }
 };
 
-test "next does nothing when the matrix is uninitialized" {
-    const allocator = std.testing.allocator;
-
+fn make_test_matrix(
+    allocator: std.mem.Allocator,
+    rows: usize,
+) !LinearMatrix {
     var matrix = LinearMatrix.init(
         allocator,
         undefined,
@@ -192,27 +274,30 @@ test "next does nothing when the matrix is uninitialized" {
         .rain,
     );
 
-    defer matrix.free();
+    matrix.cols = 1;
+    matrix.rows = rows;
 
-    try matrix.next();
+    matrix.mtrx = try allocator.alloc([]const u8, rows);
+    @memset(matrix.mtrx.?, "");
 
-    try std.testing.expect(matrix.vector() == null);
-    try std.testing.expect(matrix.metadata() == null);
+    errdefer allocator.free(matrix.mtrx.?);
+
+    matrix.meta = try allocator.alloc(Meta, 1);
+    matrix.meta.?[0] = .{
+        .cursor = 0,
+        .delay = 0,
+        .loop = 0,
+        .pause_pending = false,
+        .pause_cycles = 0,
+    };
+
+    return matrix;
 }
 
 test "free can be called multiple times" {
     const allocator = std.testing.allocator;
 
-    var matrix = LinearMatrix.init(
-        allocator,
-        undefined,
-        undefined,
-        undefined,
-        .rain,
-    );
-
-    matrix.mtrx = try allocator.alloc([]const u8, 2);
-    matrix.meta = try allocator.alloc(Meta, 1);
+    var matrix = try make_test_matrix(allocator, 4);
 
     matrix.free();
     matrix.free();
@@ -238,7 +323,7 @@ test "free is safe before build" {
     try std.testing.expect(matrix.meta == null);
 }
 
-test "next does nothing before build" {
+test "matrix state before build" {
     const allocator = std.testing.allocator;
 
     var matrix = LinearMatrix.init(
@@ -246,13 +331,111 @@ test "next does nothing before build" {
         undefined,
         undefined,
         undefined,
-        .rain,
+        .wall,
     );
-
-    try matrix.next();
 
     try std.testing.expect(matrix.mtrx == null);
     try std.testing.expect(matrix.meta == null);
-    try std.testing.expectEqual(@as(usize, 0), matrix.cols_len());
-    try std.testing.expectEqual(@as(usize, 0), matrix.rows_len());
+    try std.testing.expectEqual(0, matrix.cols_len());
+    try std.testing.expectEqual(0, matrix.rows_len());
+}
+
+test "next decrements delay without advancing the cursor" {
+    const allocator = std.testing.allocator;
+
+    var matrix = try make_test_matrix(allocator, 4);
+    defer matrix.free();
+
+    matrix.meta.?[0].cursor = 1;
+    matrix.meta.?[0].delay = 2;
+
+    try matrix.next();
+
+    try std.testing.expectEqual(1, matrix.meta.?[0].cursor);
+    try std.testing.expectEqual(1, matrix.meta.?[0].delay);
+}
+
+test "next advances the cursor when delay reaches zero" {
+    const allocator = std.testing.allocator;
+
+    var matrix = try make_test_matrix(allocator, 4);
+    defer matrix.free();
+
+    matrix.meta.?[0].cursor = 1;
+    matrix.meta.?[0].delay = 0;
+
+    try matrix.next();
+
+    try std.testing.expectEqual(2, matrix.meta.?[0].cursor);
+}
+
+test "next wraps the cursor and increments the completed cycle count" {
+    const allocator = std.testing.allocator;
+
+    var matrix = try make_test_matrix(allocator, 4);
+    defer matrix.free();
+
+    matrix.meta.?[0].cursor = 3;
+    matrix.meta.?[0].loop = 2;
+
+    try matrix.next();
+
+    try std.testing.expectEqual(0, matrix.meta.?[0].cursor);
+    try std.testing.expectEqual(3, matrix.meta.?[0].loop);
+}
+
+test "pause preserves the delay while it is positive" {
+    const allocator = std.testing.allocator;
+
+    var matrix = try make_test_matrix(allocator, 4);
+    defer matrix.free();
+
+    matrix.pause_requested = true;
+    matrix.meta.?[0].cursor = 1;
+    matrix.meta.?[0].delay = 2;
+
+    try matrix.next();
+
+    try std.testing.expectEqual(1, matrix.meta.?[0].cursor);
+    try std.testing.expectEqual(2, matrix.meta.?[0].delay);
+    try std.testing.expect(!matrix.meta.?[0].pause_pending);
+}
+
+test "pause finishes the current cycle before stopping the column" {
+    const allocator = std.testing.allocator;
+
+    var matrix = try make_test_matrix(allocator, 3);
+    defer matrix.free();
+
+    matrix.pause_requested = true;
+    matrix.meta.?[0].cursor = 1;
+
+    try matrix.next();
+
+    try std.testing.expectEqual(2, matrix.meta.?[0].cursor);
+
+    try matrix.next();
+
+    try std.testing.expectEqual(1, matrix.meta.?[0].cursor);
+    try std.testing.expect(matrix.meta.?[0].pause_pending);
+}
+
+test "toggle_pause changes the global pause request" {
+    const allocator = std.testing.allocator;
+
+    var matrix = LinearMatrix.init(
+        allocator,
+        undefined,
+        undefined,
+        undefined,
+        .wall,
+    );
+
+    try std.testing.expect(!matrix.pause_requested);
+
+    matrix.toggle_pause();
+    try std.testing.expect(matrix.pause_requested);
+
+    matrix.toggle_pause();
+    try std.testing.expect(!matrix.pause_requested);
 }

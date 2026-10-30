@@ -15,6 +15,7 @@ Customize the rain with different symbol sets, colors, gradients, movement modes
 - **Flexible orientation:** Render vertically or horizontally.
 - **Multiple color modes:** Use RGB, ANSI, or no color.
 - **Dynamic terminal sizing:** Adapt the matrix to terminal dimensions and handle window resizing.
+- **Rain control:** Toggle the rain animation on and off, allowing active drops to finish their current cycles before stopping.
 - **Debug mode:** Inspect runtime parameters, matrix dimensions, and memory usage.
 - **Console cleanup:** Handle Ctrl+C and restore the terminal state during normal shutdown.
 
@@ -178,11 +179,14 @@ The simulation accepts keyboard input while running.
 | Key | Action |
 |---|---|
 | `p`, `Space` | Toggle pause and resume. The current frame remains visible while paused. |
+| `s` | Toggle rain on and off. Active drops finish their current animation cycle before stopping. |
 | `+` | Increase the frame delay by 10 ms, up to 3000 ms. |
 | `-` | Decrease the frame delay by 10 ms, down to 0 ms. |
 | `q`, `Ctrl+C` | Request a clean exit. |
 
 Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. Runtime flags use atomic operations to coordinate input and rendering.
+
+The rain toggle provides a graceful way to stop and resume the animation. When disabled, each active column finishes its current animation cycle before stopping. When enabled again, the rain resumes. Unlike pausing, which freezes the current frame immediately, toggling the rain off allows pending animation cycles to complete.
 
 ## Shutdown and Signal Handling
 

@@ -16,6 +16,8 @@ const PanicHandler = terminal_kit.panic_handler.PanicHandler;
 const configuration = @import("configuration/configuration.zig");
 
 const debug = @import("app/debug.zig");
+
+const GameState = @import("app/game_state.zig").GameState;
 const RenderContext = @import("app/render_context.zig").RenderContext;
 
 const SymbolGenerator = @import("domain/symbol.zig").SymbolGenerator;
@@ -71,6 +73,8 @@ pub fn main() !void {
     state.start_timestamp.store(config.start_ms, .release);
     state.speed_ms.store(config.milliseconds, .release);
 
+    var game_state = GameState{};
+
     try console.enable_ansi();
     try console.enable_utf8();
 
@@ -79,6 +83,7 @@ pub fn main() !void {
 
     try run(
         &state,
+        &game_state,
         &persistent,
         &scratch,
         &config,
@@ -90,6 +95,7 @@ pub fn main() !void {
 /// until termination is requested.
 inline fn run(
     state: *runtime.RuntimeState,
+    game_state: *GameState,
     persistent: *AllocatorTracer,
     scratch: *AllocatorTracer,
     config: *const configuration.Configuration,
@@ -123,7 +129,7 @@ inline fn run(
     var input_thread = try std.Thread.spawn(
         .{},
         run_input_loop,
-        .{state},
+        .{ state, game_state },
     );
 
     defer input_thread.join();
@@ -136,6 +142,7 @@ inline fn run(
             persistent,
             scratch,
             state,
+            game_state,
             config,
             printer,
             &lcg,
@@ -154,6 +161,7 @@ inline fn run_render_cycle(
     persistent: *AllocatorTracer,
     scratch: *AllocatorTracer,
     state: *runtime.RuntimeState,
+    game_state: *GameState,
     config: *const configuration.Configuration,
     printer: *Printer,
     lcg: *MiniLCG,
@@ -177,6 +185,10 @@ inline fn run_render_cycle(
     try printer.print(console.CLEAN_CONSOLE);
 
     while (!runtime.should_exit(state) and !runtime.should_reload(state)) {
+        if (game_state.consume_drain()) {
+            context.matrix.toggle_pause();
+        }
+
         try printer.print(console.RESET_CURSOR);
 
         if (config.debug) {
@@ -213,7 +225,10 @@ inline fn run_render_cycle(
     }
 }
 
-fn run_input_loop(state: *runtime.RuntimeState) !void {
+fn run_input_loop(
+    state: *runtime.RuntimeState,
+    game_state: *GameState,
+) !void {
     const stdin = std.fs.File.stdin();
 
     while (!runtime.should_exit(state)) {
@@ -227,6 +242,9 @@ fn run_input_loop(state: *runtime.RuntimeState) !void {
         switch (buf[0]) {
             'p', 'P', console.SPACE => {
                 state.toggle_pause();
+            },
+            's', 'S' => {
+                game_state.request_drain();
             },
             '+' => {
                 state.mod_speed(10);

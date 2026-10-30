@@ -210,6 +210,10 @@ pub const LinearMatrixPrinter = struct {
             return false;
         }
 
+        if (meta.pause_pending and meta.cursor >= x) {
+            return false;
+        }
+
         return true;
     }
 };
