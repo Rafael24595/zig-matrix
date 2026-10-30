@@ -4,7 +4,7 @@ A configurable, terminal-based Matrix-style digital rain effect written in Zig. 
 
 Customize the rain with different symbol sets, colors, gradients, movement modes, and rendering orientations.
 
-> **Terminal compatibility:** The project has been tested with Windows Terminal 1.23.13503.0. Rendering performance and character display may vary across terminal emulators. If RGB rendering is slow, try `ansi` mode; use `none` mode when color output is unnecessary.
+> **Terminal compatibility:** The project has been tested with Windows Terminal 1.23.13503.0. Rendering performance and character display may vary across terminal emulators. If RGB rendering is slow, try `ansi` mode; use `none` mode when color output is unnecessary. Keyboard input and character rendering may vary across terminal emulators.
 
 ## Features
 
@@ -190,4 +190,8 @@ The rain toggle provides a graceful way to stop and resume the animation. When d
 
 ## Shutdown and Signal Handling
 
-The application installs a signal handler and requests shutdown when an interrupt is received. During normal shutdown, cleanup routines attempt to restore the cursor and clear terminal output. Exact behavior may depend on the operating system, terminal emulator, and how the process terminates.
+The application installs a signal handler and requests shutdown when an interrupt is received. During normal shutdown, deferred cleanup routines attempt to restore raw input mode and disable ANSI input, restore cursor visibility, and clear terminal output.
+
+A custom panic handler also attempts to restore terminal settings before delegating to Zig's default panic handler. Recovery is best-effort and may not prevent terminal state from being left partially modified, especially if a panic occurs on another thread while rendering is in progress.
+
+Exact behavior may depend on the operating system, terminal emulator, and how the process terminates.
