@@ -75,6 +75,9 @@ pub fn main() !void {
 
     var game_state = GameState{};
 
+    game_state.orientation.store(config.orientation, .release);
+    game_state.flux.store(config.flux, .release);
+
     try console.enable_ansi();
     try console.enable_utf8();
 
@@ -175,6 +178,7 @@ inline fn run_render_cycle(
         allocator,
         winsize,
         config,
+        game_state,
         printer,
         lcg,
         ascii_generator,
@@ -191,6 +195,7 @@ inline fn run_render_cycle(
 
         if (game_state.consume_flux()) {
             context.matrix_printer.toggle_reverse();
+            game_state.toggle_flux();
         }
 
         try printer.print(console.RESET_CURSOR);
@@ -249,6 +254,10 @@ fn run_input_loop(
             },
             'd', 'D' => {
                 game_state.request_drain();
+            },
+            'o', 'O' => {
+                game_state.toggle_orientation();
+                state.request_reload();
             },
             'f', 'F' => {
                 game_state.request_flux();

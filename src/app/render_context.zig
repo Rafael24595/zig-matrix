@@ -11,6 +11,8 @@ const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 
 const kit_color = terminal_kit.color;
 
+const GameState = @import("./game_state.zig").GameState;
+
 const configuration = @import("../configuration/configuration.zig");
 
 const LinearMatrixPrinter = @import("../io/matrix_printer.zig").LinearMatrixPrinter;
@@ -44,27 +46,25 @@ pub const RenderContext = struct {
         allocator: std.mem.Allocator,
         winsize: console.WinSize,
         config: *const configuration.Configuration,
+        game_state: *GameState,
         printer: *Printer,
         lcg: *MiniLCG,
         generator: *SymbolGenerator,
     ) !void {
         const space = calculate_padding(config);
-        const vertical = config.orientation == .vertical;
 
-        const cols = if (is_vertical)
+        const vertical = game_state.orientation.load(.acquire) == .vertical;
+        const reverse = game_state.flux.load(.acquire) == .reverse;
+
+        const cols = if (vertical)
             winsize.cols
         else
             winsize.rows - space;
 
-        const rows = if (is_vertical)
+        const rows = if (vertical)
             winsize.rows - space
         else
             winsize.cols;
-
-        const reverse = switch (config.flux) {
-            .normal => false,
-            .reverse => true,
-        };
 
         const drop = calculate_drop_lenght(config, rows);
 

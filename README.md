@@ -12,8 +12,8 @@ Customize the rain with different symbol sets, colors, gradients, movement modes
 - **Color customization:** Choose from a variety of colors and gradient modes.
 - **Symbol themes:** Select from character sets including binary, digits, Latin, Greek, Cyrillic, runes, and more.
 - **Rendering modes:** Choose between `rain`, `wave`, and `wall`.
-- **Flexible orientation:** Render vertically or horizontally.
-- **Matrix flux:** Toggle the rendering flow direction between normal and reverse.
+- **Flexible orientation:** Render vertically or horizontally, with runtime switching.
+- **Matrix flux:** Toggle the rendering flow direction between normal and reverse in real time.
 - **Multiple color modes:** Use RGB, ANSI, or no color.
 - **Dynamic terminal sizing:** Adapt the matrix to terminal dimensions and handle window resizing.
 - **Rain control:** Toggle the rain animation on and off, allowing active drops to finish their current cycles before stopping.
@@ -72,6 +72,8 @@ zig-out/bin/zig-matrix --help
 | `-cm` | Set the color mode | `rgb` |
 | `-o` | Set the matrix orientation | `vertical` |
 | `-f` | Set the matrix flux direction | `normal` |
+
+The orientation (`-o`) and flux (`-f`) options define the initial rendering state. Both settings can also be changed interactively while the application is running.
 
 ### Available values
 
@@ -186,14 +188,17 @@ The simulation accepts keyboard input while running.
 |---|---|
 | `p`, `Space` | Toggle pause and resume. The current frame remains visible while paused. |
 | `d` | Toggle rain on and off. Active drops finish their current animation cycle before stopping. |
+| `o` | Toggle the matrix orientation between vertical and horizontal. |
 | `f` | Toggle the matrix flux direction between normal and reverse. |
 | `+` | Increase the frame delay by 10 ms, up to 3000 ms. |
 | `-` | Decrease the frame delay by 10 ms, down to 0 ms. |
 | `q`, `Ctrl+C` | Request a clean exit. |
 
-Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. Runtime flags use atomic operations to coordinate input and rendering.
+Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. The input and rendering threads communicate through atomic game state, which stores the current matrix orientation and flux direction, as well as pending drain and flux requests.
 
 The rain toggle provides a graceful way to stop and resume the animation. When disabled, each active column finishes its current animation cycle before stopping. When enabled again, the rain resumes. Unlike pausing, which freezes the current frame immediately, toggling the rain off allows pending animation cycles to complete.
+
+The orientation toggle switches the matrix between vertical and horizontal layouts. Changing the orientation requests a render context reload so that the matrix dimensions and layout can be recalculated. The application continues running without requiring a restart.
 
 The flux toggle inverts the rendering direction of the matrix in real-time, switching instantly between normal and reverse flows without restarting the application.
 

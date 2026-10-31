@@ -10,10 +10,14 @@ const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const RuntimeState = terminal_kit.runtime_state.RuntimeState;
 const Printer = terminal_kit.printer.Printer;
 
+const GameState = @import("./game_state.zig").GameState;
+
 const configuration = @import("../configuration/configuration.zig");
 
 const RenderContext = @import("./render_context.zig").RenderContext;
+
 const Flux = @import("../domain/flux.zig").Flux;
+const Orientation = @import("../domain/orientation.zig").Orientation;
 
 /// Prints diagnostic information about the application, runtime state,
 /// memory usage, rendering configuration, and current matrix dimensions.
@@ -47,6 +51,11 @@ pub fn print_debug(
 
     const paused = state.pause.load(.acquire);
 
+    const orientation: Orientation = if (context.matrix_printer.vertical)
+        .vertical
+    else
+        .horizontal;
+
     const flux: Flux = if (context.matrix_printer.reverse)
         .reverse
     else
@@ -70,7 +79,7 @@ pub fn print_debug(
         config.rain_color,
         config.matrix_mode,
         config.color_mode,
-        config.orientation,
+        orientation,
         flux,
     });
 
@@ -89,9 +98,10 @@ pub fn print_debug(
 ///
 /// Returns an error if printing the controls fails.
 pub fn print_controls(printer: *Printer) !void {
-    try printer.printf("\nPause: [{s}] | Drain: [{s}] | Flux: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
+    try printer.printf("\nPause: [{s}] | Drain: [{s}] | Orientation: [{s}] | Flux: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
         "p, space",
         "d",
+        "o",
         "f",
         "+",
         "-",
