@@ -46,10 +46,10 @@ pub const RenderContext = struct {
         config: *const configuration.Configuration,
         printer: *Printer,
         lcg: *MiniLCG,
-        asciiGenerator: *SymbolGenerator,
+        generator: *SymbolGenerator,
     ) !void {
         const space = calculate_padding(config);
-        const is_vertical = config.orientation == .vertical;
+        const vertical = config.orientation == .vertical;
 
         const cols = if (is_vertical)
             winsize.cols
@@ -80,7 +80,7 @@ pub const RenderContext = struct {
         self.matrix = LinearMatrix.init(
             allocator,
             lcg,
-            asciiGenerator,
+            generator,
             &self.scale,
             config.matrix_mode,
         );
@@ -96,7 +96,7 @@ pub const RenderContext = struct {
             config.formatter_cell,
             &self.scale,
             &self.matrix,
-            is_vertical,
+            vertical,
             reverse,
         );
 
