@@ -57,9 +57,9 @@ pub const LinearMatrixPrinter = struct {
 
         const char_fmt_len = fmt_cell.fmt_bytes() + matrix.max_char_bytes();
         const mtrx_fmt_len = rows * cols * char_fmt_len;
-        const estimatedSize = prefix.len + mtrx_fmt_len + sufix.len;
+        const estimated_size = prefix.len + mtrx_fmt_len + sufix.len;
 
-        var buffer = try std.ArrayList(u8).initCapacity(allocator, estimatedSize);
+        var buffer = try std.ArrayList(u8).initCapacity(allocator, estimated_size);
         errdefer buffer.deinit(allocator);
 
         const format = try allocator.alloc(u8, char_fmt_len);
