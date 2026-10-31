@@ -10,9 +10,14 @@ const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const RuntimeState = terminal_kit.runtime_state.RuntimeState;
 const Printer = terminal_kit.printer.Printer;
 
+const GameState = @import("./game_state.zig").GameState;
+
 const configuration = @import("../configuration/configuration.zig");
 
 const RenderContext = @import("./render_context.zig").RenderContext;
+
+const Flux = @import("../domain/flux.zig").Flux;
+const Orientation = @import("../domain/orientation.zig").Orientation;
 
 /// Prints diagnostic information about the application, runtime state,
 /// memory usage, rendering configuration, and current matrix dimensions.
@@ -46,7 +51,17 @@ pub fn print_debug(
 
     const paused = state.pause.load(.acquire);
 
-    try printer.printf("{}: {s}\n", .{
+    const orientation: Orientation = if (context.matrix_printer.vertical)
+        .vertical
+    else
+        .horizontal;
+
+    const flux: Flux = if (context.matrix_printer.reverse)
+        .reverse
+    else
+        .normal;
+
+    try printer.printf("{}: {s} \n", .{
         build.name,
         build.version,
     });
@@ -58,21 +73,23 @@ pub fn print_debug(
         context.counter.get_frame_rate(std.time.ms_per_s),
     });
 
-    try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any}\n", .{
+    try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any} | Flux: {any} \n", .{
         state.speed_ms.load(.acquire),
         config.symbol_mode,
-        config.rainColor,
+        config.rain_color,
         config.matrix_mode,
         config.color_mode,
-        config.orientation,
+        orientation,
+        flux,
     });
 
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop lenght: {d} | Time: {s} \n", .{
+    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop length: {d} | Drain: {any} | Time: {s} \n", .{
         config.seed,
         area,
         cols,
         rows,
         config.drop_len,
+        matrix.pause_requested,
         time,
     });
 }
@@ -81,10 +98,13 @@ pub fn print_debug(
 ///
 /// Returns an error if printing the controls fails.
 pub fn print_controls(printer: *Printer) !void {
-    try printer.printf("\nPause: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
+    try printer.printf("\nPause: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Drain: [{s}] | Orientation: [{s}] | Flux: [{s}] | Exit: [{s}]", .{
         "p, space",
         "+",
         "-",
+        "d",
+        "o",
+        "f",
         "q, ctrl+c",
     });
 }

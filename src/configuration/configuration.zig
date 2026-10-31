@@ -13,11 +13,12 @@ const kit_conf = terminal_kit.configuration;
 const kit_formatter = terminal_kit.formatter;
 const kit_color = terminal_kit.color;
 
-const symbol = @import("../domain/symbol.zig");
-const color = @import("../domain/color.zig");
+const Theme = @import("../domain/symbol.zig").Theme;
+const ThemeGradient = @import("../domain/color.zig").ThemeGradient;
 
-const matrix = @import("../domain/matrix.zig");
-const orientation = @import("../domain/orientation.zig");
+const Flux = @import("../domain/flux.zig").Flux;
+const Mode = @import("../domain/matrix.zig").Mode;
+const Orientation = @import("../domain/orientation.zig").Orientation;
 
 const formatter = @import("../io/formatter.zig");
 
@@ -128,6 +129,14 @@ const FLAG_ORIENTATION_MODE: Flag = Flag{
     .aux_desc = "(vertical or horizontal)",
 };
 
+const FLAG_FLUX_MODE: Flag = Flag{
+    .flag_short = "-f",
+    .type = "<enum>",
+    .desc = "Matrix flux",
+    .name = "flux",
+    .aux_desc = "(normal or reverse)",
+};
+
 /// Stores the application settings parsed from command-line arguments,
 /// including rendering options, animation timing and matrix appearance.
 pub const Configuration = struct {
@@ -152,13 +161,13 @@ pub const Configuration = struct {
     drop_len: usize = 0,
 
     /// Base color used for the rain effect.
-    rainColor: kit_color.Color = .green,
+    rain_color: kit_color.Color = .green,
     /// Gradient applied to the rain effect.
-    rain_mode: color.ThemeGradient = .default,
+    rain_mode: ThemeGradient = .default,
     /// Theme used to generate matrix symbols.
-    symbol_mode: symbol.Theme = .default,
+    symbol_mode: Theme = .default,
     /// Behavior used to generate matrix contents.
-    matrix_mode: matrix.Mode = .rain,
+    matrix_mode: Mode = .rain,
 
     /// Color formatting mode used by the output formatters.
     color_mode: formatter.FormatterCode = .rgb,
@@ -169,7 +178,9 @@ pub const Configuration = struct {
     formatter_cell: kit_formatter.FormatterCellUnion = formatter.cell_union_of(.rgb),
 
     /// Direction in which the matrix is rendered.
-    orientation: orientation.Orientation = .vertical,
+    orientation: Orientation = .vertical,
+    /// Direction in which the matrix flows.
+    flux: Flux = .normal,
 
     /// Parses command-line arguments into a configuration.
     ///
@@ -226,25 +237,25 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_THEME_COLOR.flag_short)) {
-                config.rainColor = try kit_conf.parse_enum(kit_color.Color, printer, args, i, FLAG_THEME_COLOR);
+                config.rain_color = try kit_conf.parse_enum(kit_color.Color, printer, args, i, FLAG_THEME_COLOR);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_THEME_GRADIENT.flag_short)) {
-                config.rain_mode = try kit_conf.parse_enum(color.ThemeGradient, printer, args, i, FLAG_THEME_GRADIENT);
+                config.rain_mode = try kit_conf.parse_enum(ThemeGradient, printer, args, i, FLAG_THEME_GRADIENT);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_THEME_SYMBOL.flag_short)) {
-                config.symbol_mode = try kit_conf.parse_enum(symbol.Theme, printer, args, i, FLAG_THEME_SYMBOL);
+                config.symbol_mode = try kit_conf.parse_enum(Theme, printer, args, i, FLAG_THEME_SYMBOL);
                 i += 1;
                 continue;
             }
 
             if (std.mem.eql(u8, arg, FLAG_MATRIX_MODE.flag_short)) {
-                config.matrix_mode = try kit_conf.parse_enum(matrix.Mode, printer, args, i, FLAG_MATRIX_MODE);
+                config.matrix_mode = try kit_conf.parse_enum(Mode, printer, args, i, FLAG_MATRIX_MODE);
                 i += 1;
                 continue;
             }
@@ -258,7 +269,13 @@ pub const Configuration = struct {
             }
 
             if (std.mem.eql(u8, arg, FLAG_ORIENTATION_MODE.flag_short)) {
-                config.orientation = try kit_conf.parse_enum(orientation.Orientation, printer, args, i, FLAG_ORIENTATION_MODE);
+                config.orientation = try kit_conf.parse_enum(Orientation, printer, args, i, FLAG_ORIENTATION_MODE);
+                i += 1;
+                continue;
+            }
+
+            if (std.mem.eql(u8, arg, FLAG_FLUX_MODE.flag_short)) {
+                config.flux = try kit_conf.parse_enum(Flux, printer, args, i, FLAG_FLUX_MODE);
                 i += 1;
                 continue;
             }
@@ -348,7 +365,7 @@ pub const Configuration = struct {
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
             FLAG_THEME_COLOR,
-            .{ .str = @tagName(config.rainColor) },
+            .{ .str = @tagName(config.rain_color) },
         ));
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
@@ -381,6 +398,12 @@ pub const Configuration = struct {
             .{ .str = @tagName(config.orientation) },
         ));
 
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_FLUX_MODE,
+            .{ .str = @tagName(config.flux) },
+        ));
+
         return buffer.items;
     }
 };
@@ -404,18 +427,18 @@ test "Configuration uses the expected default values" {
     try std.testing.expect(!config.debug);
     try std.testing.expect(!config.controls);
 
-    try std.testing.expectEqual(@as(u64, 0), config.seed);
-    try std.testing.expectEqual(@as(i64, 0), config.start_ms);
+    try std.testing.expectEqual(0, config.seed);
+    try std.testing.expectEqual(0, config.start_ms);
     try std.testing.expectEqual(frame_pause_ms, config.milliseconds);
 
-    try std.testing.expectEqual(@as(f32, 0.4), config.drop_per);
-    try std.testing.expectEqual(@as(usize, 0), config.drop_len);
+    try std.testing.expectEqual(0.4, config.drop_per);
+    try std.testing.expectEqual(0, config.drop_len);
 
-    try std.testing.expectEqual(kit_color.Color.green, config.rainColor);
-    try std.testing.expectEqual(color.ThemeGradient.default, config.rain_mode);
-    try std.testing.expectEqual(symbol.Theme.default, config.symbol_mode);
-    try std.testing.expectEqual(matrix.Mode.rain, config.matrix_mode);
-    try std.testing.expectEqual(orientation.Orientation.vertical, config.orientation);
+    try std.testing.expectEqual(kit_color.Color.green, config.rain_color);
+    try std.testing.expectEqual(ThemeGradient.default, config.rain_mode);
+    try std.testing.expectEqual(Theme.default, config.symbol_mode);
+    try std.testing.expectEqual(Mode.rain, config.matrix_mode);
+    try std.testing.expectEqual(Orientation.vertical, config.orientation);
 
     try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
 }

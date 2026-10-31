@@ -11,6 +11,8 @@ const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
 
 const kit_color = terminal_kit.color;
 
+const GameState = @import("./game_state.zig").GameState;
+
 const configuration = @import("../configuration/configuration.zig");
 
 const LinearMatrixPrinter = @import("../io/matrix_printer.zig").LinearMatrixPrinter;
@@ -21,7 +23,7 @@ const color = @import("../domain/color.zig");
 
 /// Holds the resources and state required to render the matrix,
 /// including its color scale, matrix data, output formatter and frame counter.
-/// 
+///
 /// Call `init` before using the context and `deinit` to release its
 /// resources after successful initialization.
 pub const RenderContext = struct {
@@ -44,19 +46,22 @@ pub const RenderContext = struct {
         allocator: std.mem.Allocator,
         winsize: console.WinSize,
         config: *const configuration.Configuration,
+        game_state: *GameState,
         printer: *Printer,
         lcg: *MiniLCG,
-        asciiGenerator: *SymbolGenerator,
+        generator: *SymbolGenerator,
     ) !void {
         const space = calculate_padding(config);
-        const isVertical = config.orientation == .vertical;
 
-        const cols = if (isVertical)
+        const vertical = game_state.orientation.load(.acquire) == .vertical;
+        const reverse = game_state.flux.load(.acquire) == .reverse;
+
+        const cols = if (vertical)
             winsize.cols
         else
             winsize.rows - space;
 
-        const rows = if (isVertical)
+        const rows = if (vertical)
             winsize.rows - space
         else
             winsize.cols;
@@ -66,7 +71,7 @@ pub const RenderContext = struct {
         self.scale = try color.ColorScale.init(
             allocator,
             drop,
-            kit_color.rgb_of(config.rainColor),
+            kit_color.rgb_of(config.rain_color),
             config.rain_mode,
         );
 
@@ -75,7 +80,7 @@ pub const RenderContext = struct {
         self.matrix = LinearMatrix.init(
             allocator,
             lcg,
-            asciiGenerator,
+            generator,
             &self.scale,
             config.matrix_mode,
         );
@@ -91,7 +96,8 @@ pub const RenderContext = struct {
             config.formatter_cell,
             &self.scale,
             &self.matrix,
-            isVertical,
+            vertical,
+            reverse,
         );
 
         errdefer self.matrix_printer.free();
