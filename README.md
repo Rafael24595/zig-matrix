@@ -185,7 +185,7 @@ The simulation accepts keyboard input while running.
 | Key | Action |
 |---|---|
 | `p`, `Space` | Toggle pause and resume. The current frame remains visible while paused. |
-| `s` | Toggle rain on and off. Active drops finish their current animation cycle before stopping. |
+| `d` | Toggle rain on and off. Active drops finish their current animation cycle before stopping. |
 | `f` | Toggle the matrix flux direction between normal and reverse. |
 | `+` | Increase the frame delay by 10 ms, up to 3000 ms. |
 | `-` | Decrease the frame delay by 10 ms, down to 0 ms. |

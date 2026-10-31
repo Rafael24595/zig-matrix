@@ -91,7 +91,7 @@ pub fn print_debug(
 pub fn print_controls(printer: *Printer) !void {
     try printer.printf("\nPause: [{s}] | Drain: [{s}] | Flux: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
         "p, space",
-        "s",
+        "d",
         "f",
         "+",
         "-",

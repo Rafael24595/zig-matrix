@@ -247,7 +247,7 @@ fn run_input_loop(
             'p', 'P', console.SPACE => {
                 state.toggle_pause();
             },
-            's', 'S' => {
+            'd', 'D' => {
                 game_state.request_drain();
             },
             'f', 'F' => {
