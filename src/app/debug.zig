@@ -98,13 +98,13 @@ pub fn print_debug(
 ///
 /// Returns an error if printing the controls fails.
 pub fn print_controls(printer: *Printer) !void {
-    try printer.printf("\nPause: [{s}] | Drain: [{s}] | Orientation: [{s}] | Flux: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Exit: [{s}]", .{
+    try printer.printf("\nPause: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Drain: [{s}] | Orientation: [{s}] | Flux: [{s}] | Exit: [{s}]", .{
         "p, space",
+        "+",
+        "-",
         "d",
         "o",
         "f",
-        "+",
-        "-",
         "q, ctrl+c",
     });
 }
