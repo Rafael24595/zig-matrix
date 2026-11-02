@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
+const SplitMix64 = @import("terminal_kit").splitmix64.SplitMix64;
 
 /// Selects the character set used to generate matrix symbols.
 pub const Theme = enum {
@@ -346,17 +346,17 @@ pub fn metaOf(m: Theme) ThemeMeta {
 /// number generator.
 pub const SymbolGenerator = struct {
     /// Pseudo-random number generator used to select symbols from the character set.
-    lcg: *MiniLCG,
+    rng: *SplitMix64,
 
     /// Character set and maximum encoded symbol size for this generator.
     meta: ThemeMeta,
 
     /// Creates a generator for the specified theme.
     ///
-    /// Borrows `lcg`; the caller retains ownership of the random generator.
-    pub fn init(lcg: *MiniLCG, mode: Theme) @This() {
+    /// Borrows `rng`; the caller retains ownership of the random generator.
+    pub fn init(rng: *SplitMix64, mode: Theme) @This() {
         return SymbolGenerator{
-            .lcg = lcg,
+            .rng = rng,
             .meta = metaOf(mode),
         };
     }
@@ -369,14 +369,14 @@ pub const SymbolGenerator = struct {
     /// Returns the next pseudo-random symbol from the selected theme.
     pub fn next(self: *@This()) []const u8 {
         const chars = self.meta.chars;
-        const idx = self.lcg.rand_in_range(0, chars.len - 1);
+        const idx = self.rng.rand_in_range(0, chars.len - 1);
         return chars[idx];
     }
 };
 
 test "next uses table for Symbols mode" {
-    var lcg = MiniLCG.init(1234);
-    var gen = SymbolGenerator.init(&lcg, Theme.symbols);
+    var rng = SplitMix64.init(1234);
+    var gen = SymbolGenerator.init(&rng, Theme.symbols);
     const tbl = gen.meta.chars;
 
     for (0..100) |_| {
@@ -393,15 +393,15 @@ test "next uses table for Symbols mode" {
 }
 
 test "max_bytes returns the expected size for the selected theme" {
-    var lcg = MiniLCG.init(1234);
+    var rng = SplitMix64.init(1234);
 
-    var ascii_gen = SymbolGenerator.init(&lcg, .digits);
+    var ascii_gen = SymbolGenerator.init(&rng, .digits);
     try std.testing.expectEqual(1, ascii_gen.max_bytes());
 
-    var blocks_gen = SymbolGenerator.init(&lcg, .blocks);
+    var blocks_gen = SymbolGenerator.init(&rng, .blocks);
     try std.testing.expectEqual(3, blocks_gen.max_bytes());
 
-    var cyrillic_gen = SymbolGenerator.init(&lcg, .cyrillic);
+    var cyrillic_gen = SymbolGenerator.init(&rng, .cyrillic);
     try std.testing.expectEqual(2, cyrillic_gen.max_bytes());
 }
 

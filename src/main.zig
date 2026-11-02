@@ -9,7 +9,7 @@ const Printer = terminal_kit.printer.Printer;
 const runtime = terminal_kit.runtime_state;
 
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
-const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+const SplitMix64 = terminal_kit.splitmix64.SplitMix64;
 
 const PanicHandler = terminal_kit.panic_handler.PanicHandler;
 
@@ -114,10 +114,10 @@ inline fn run(
 
     const allocator = persistent.allocator();
 
-    var lcg = MiniLCG.init(config.seed);
+    var rng = SplitMix64.init(config.seed);
 
     var ascii_generator = SymbolGenerator.init(
-        &lcg,
+        &rng,
         config.symbol_mode,
     );
 
@@ -148,7 +148,7 @@ inline fn run(
             game_state,
             config,
             printer,
-            &lcg,
+            &rng,
             &ascii_generator,
         );
     }
@@ -167,7 +167,7 @@ inline fn run_render_cycle(
     game_state: *GameState,
     config: *const configuration.Configuration,
     printer: *Printer,
-    lcg: *MiniLCG,
+    rng: *SplitMix64,
     ascii_generator: *SymbolGenerator,
 ) !void {
     const winsize = try console.winsize();
@@ -180,7 +180,7 @@ inline fn run_render_cycle(
         config,
         game_state,
         printer,
-        lcg,
+        rng,
         ascii_generator,
     );
 

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const MiniLCG = @import("terminal_kit").mini_lcg.MiniLCG;
+const SplitMix64 = @import("terminal_kit").splitmix64.SplitMix64;
 
 const AsciiGenerator = @import("symbol.zig").SymbolGenerator;
 const ColorScale = @import("color.zig").ColorScale;
@@ -43,7 +43,7 @@ pub const LinearMatrix = struct {
     allocator: std.mem.Allocator,
 
     /// Random number generator used to initialize column delays.
-    lcg: *MiniLCG,
+    rng: *SplitMix64,
     /// Symbol generator used to populate the matrix with symbols.
     ascii: *AsciiGenerator,
     /// Color scale used to render the matrix symbols.
@@ -72,14 +72,14 @@ pub const LinearMatrix = struct {
     /// Does not allocate matrix storage until `build` is called.
     pub fn init(
         allocator: std.mem.Allocator,
-        lcg: *MiniLCG,
+        rng: *SplitMix64,
         ascii: *AsciiGenerator,
         scale: *ColorScale,
         mode: Mode,
     ) @This() {
         return LinearMatrix{
             .allocator = allocator,
-            .lcg = lcg,
+            .rng = rng,
             .ascii = ascii,
             .scale = scale,
             .mode = mode,
@@ -123,7 +123,7 @@ pub const LinearMatrix = struct {
         };
 
         for (0..self.cols) |x| {
-            const delay = self.lcg.rand_in_range(0, self.delay_mode);
+            const delay = self.rng.rand_in_range(0, self.delay_mode);
 
             meta[x].cursor = 0;
             meta[x].loop = 0;
@@ -249,7 +249,7 @@ pub const LinearMatrix = struct {
                 continue;
             }
 
-            const delay = self.lcg.rand_in_range(0, self.delay_mode);
+            const delay = self.rng.rand_in_range(0, self.delay_mode);
 
             col.* = .{
                 .cursor = 0,

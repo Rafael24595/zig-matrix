@@ -7,7 +7,7 @@ const Counter = terminal_kit.frame.Counter;
 const console = terminal_kit.console;
 const Printer = terminal_kit.printer.Printer;
 
-const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+const SplitMix64 = terminal_kit.splitmix64.SplitMix64;
 
 const kit_color = terminal_kit.color;
 
@@ -48,7 +48,7 @@ pub const RenderContext = struct {
         config: *const configuration.Configuration,
         game_state: *GameState,
         printer: *Printer,
-        lcg: *MiniLCG,
+        rng: *SplitMix64,
         generator: *SymbolGenerator,
     ) !void {
         const space = calculate_padding(config);
@@ -79,7 +79,7 @@ pub const RenderContext = struct {
 
         self.matrix = LinearMatrix.init(
             allocator,
-            lcg,
+            rng,
             generator,
             &self.scale,
             config.matrix_mode,
