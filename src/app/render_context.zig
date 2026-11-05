@@ -6,10 +6,12 @@ const Counter = terminal_kit.frame.Counter;
 
 const console = terminal_kit.console;
 const Printer = terminal_kit.printer.Printer;
-
-const MiniLCG = terminal_kit.mini_lcg.MiniLCG;
+const RuntimeState = terminal_kit.runtime_state.RuntimeState;
+const SplitMix64 = terminal_kit.splitmix64.SplitMix64;
 
 const kit_color = terminal_kit.color;
+
+const GameState = @import("./game_state.zig").GameState;
 
 const configuration = @import("../configuration/configuration.zig");
 
@@ -21,7 +23,7 @@ const color = @import("../domain/color.zig");
 
 /// Holds the resources and state required to render the matrix,
 /// including its color scale, matrix data, output formatter and frame counter.
-/// 
+///
 /// Call `init` before using the context and `deinit` to release its
 /// resources after successful initialization.
 pub const RenderContext = struct {
@@ -44,19 +46,23 @@ pub const RenderContext = struct {
         allocator: std.mem.Allocator,
         winsize: console.WinSize,
         config: *const configuration.Configuration,
+        state: *RuntimeState,
+        game_state: *GameState,
         printer: *Printer,
-        lcg: *MiniLCG,
-        asciiGenerator: *SymbolGenerator,
+        rng: *SplitMix64,
+        generator: *SymbolGenerator,
     ) !void {
-        const space = calculate_padding(config);
-        const isVertical = config.orientation == .vertical;
+        const space = calculate_padding(state);
 
-        const cols = if (isVertical)
+        const vertical = game_state.get_orientation() == .vertical;
+        const reverse = game_state.get_flux() == .reverse;
+
+        const cols = if (vertical)
             winsize.cols
         else
             winsize.rows - space;
 
-        const rows = if (isVertical)
+        const rows = if (vertical)
             winsize.rows - space
         else
             winsize.cols;
@@ -66,7 +72,7 @@ pub const RenderContext = struct {
         self.scale = try color.ColorScale.init(
             allocator,
             drop,
-            kit_color.rgb_of(config.rainColor),
+            kit_color.rgb_of(config.rain_color),
             config.rain_mode,
         );
 
@@ -74,8 +80,8 @@ pub const RenderContext = struct {
 
         self.matrix = LinearMatrix.init(
             allocator,
-            lcg,
-            asciiGenerator,
+            rng,
+            generator,
             &self.scale,
             config.matrix_mode,
         );
@@ -91,7 +97,8 @@ pub const RenderContext = struct {
             config.formatter_cell,
             &self.scale,
             &self.matrix,
-            isVertical,
+            vertical,
+            reverse,
         );
 
         errdefer self.matrix_printer.free();
@@ -109,14 +116,14 @@ pub const RenderContext = struct {
     }
 };
 
-inline fn calculate_padding(config: *const configuration.Configuration) usize {
+inline fn calculate_padding(state: *RuntimeState) usize {
     var space: usize = 0;
-    if (config.debug) {
+    if (state.show_debug()) {
         space += 4;
     }
 
-    if (config.controls) {
-        space += 1;
+    if (state.show_controls()) {
+        space += 2;
     }
 
     return space;
@@ -132,39 +139,39 @@ inline fn calculate_drop_lenght(config: *const configuration.Configuration, rows
 }
 
 test "calculate_padding returns zero when debug and controls are disabled" {
-    const config = configuration.Configuration{
-        .debug = false,
-        .controls = false,
+    var state = RuntimeState{
+        .debug = .init(false),
+        .controls = .init(false),
     };
 
-    try std.testing.expectEqual(0, calculate_padding(&config));
+    try std.testing.expectEqual(0, calculate_padding(&state));
 }
 
 test "calculate_padding reserves space for debug output" {
-    const config = configuration.Configuration{
-        .debug = true,
-        .controls = false,
+    var state = RuntimeState{
+        .debug = .init(true),
+        .controls = .init(false),
     };
 
-    try std.testing.expectEqual(4, calculate_padding(&config));
+    try std.testing.expectEqual(4, calculate_padding(&state));
 }
 
 test "calculate_padding reserves space for controls" {
-    const config = configuration.Configuration{
-        .debug = false,
-        .controls = true,
+    var state = RuntimeState{
+        .debug = .init(false),
+        .controls = .init(true),
     };
 
-    try std.testing.expectEqual(1, calculate_padding(&config));
+    try std.testing.expectEqual(2, calculate_padding(&state));
 }
 
 test "calculate_padding reserves space for debug output and controls" {
-    const config = configuration.Configuration{
-        .debug = true,
-        .controls = true,
+    var state = RuntimeState{
+        .debug = .init(true),
+        .controls = .init(true),
     };
 
-    try std.testing.expectEqual(5, calculate_padding(&config));
+    try std.testing.expectEqual(6, calculate_padding(&state));
 }
 
 test "calculate_drop_lenght uses the configured drop length" {

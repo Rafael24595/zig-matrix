@@ -27,6 +27,8 @@ pub const LinearMatrixPrinter = struct {
 
     /// Whether rows are rendered vertically rather than horizontally.
     vertical: bool,
+    /// Whether the matrix is rendered in reverse order.
+    reverse: bool,
 
     /// Accumulates the complete formatted frame before output.
     buffer: std.ArrayList(u8),
@@ -45,6 +47,7 @@ pub const LinearMatrixPrinter = struct {
         scale: *ColorScale,
         matrix: *LinearMatrix,
         vertical: bool,
+        reverse: bool,
     ) !@This() {
         const rows = matrix.rows_len();
         const cols = matrix.cols_len();
@@ -54,9 +57,9 @@ pub const LinearMatrixPrinter = struct {
 
         const char_fmt_len = fmt_cell.fmt_bytes() + matrix.max_char_bytes();
         const mtrx_fmt_len = rows * cols * char_fmt_len;
-        const estimatedSize = prefix.len + mtrx_fmt_len + sufix.len;
+        const estimated_size = prefix.len + mtrx_fmt_len + sufix.len;
 
-        var buffer = try std.ArrayList(u8).initCapacity(allocator, estimatedSize);
+        var buffer = try std.ArrayList(u8).initCapacity(allocator, estimated_size);
         errdefer buffer.deinit(allocator);
 
         const format = try allocator.alloc(u8, char_fmt_len);
@@ -69,6 +72,7 @@ pub const LinearMatrixPrinter = struct {
             .prefix = prefix,
             .sufix = sufix,
             .vertical = vertical,
+            .reverse = reverse,
             .buffer = buffer,
             .format = format,
         };
@@ -78,6 +82,11 @@ pub const LinearMatrixPrinter = struct {
     pub fn free(self: *@This()) void {
         self.buffer.deinit(self.allocator);
         self.allocator.free(self.format);
+    }
+
+    /// Toggles the reverse rendering mode of the matrix printer.
+    pub fn toggle_reverse(self: *@This()) void {
+        self.reverse = !self.reverse;
     }
 
     /// Formats and emits the current matrix frame.
@@ -110,21 +119,37 @@ pub const LinearMatrixPrinter = struct {
         try self.printer.print(self.buffer.items);
     }
 
-    inline fn print_vertical(self: *@This(), mtrx: *LinearMatrix) !void {
-        const matrix = mtrx.vector().?;
-        const metadata = mtrx.metadata().?;
+    inline fn print_vertical(self: *@This(), matrix: *LinearMatrix) !void {
+        if (self.reverse) {
+            try self.print_vertical_impl(matrix, true);
+        } else {
+            try self.print_vertical_impl(matrix, false);
+        }
+    }
 
-        const rows = mtrx.rows_len();
-        const cols = mtrx.cols_len();
+    inline fn print_vertical_impl(
+        self: *@This(),
+        matrix: *LinearMatrix,
+        comptime reverse: bool,
+    ) !void {
+        const vector = matrix.vector().?;
+        const metadata = matrix.metadata().?;
 
-        for (0..rows) |x| {
+        const rows = matrix.rows_len();
+        const cols = matrix.cols_len();
+
+        for (0..rows) |j| {
+            const x = if (reverse) (rows - 1 - j) else j;
+
             const col_start = x * cols;
 
-            for (0..cols) |y| {
+            for (0..cols) |i| {
+                const y = if (reverse) (cols - 1 - i) else i;
+
                 const meta = metadata[y];
 
                 try self.print_cell(
-                    matrix,
+                    vector,
                     meta,
                     rows,
                     col_start,
@@ -133,27 +158,43 @@ pub const LinearMatrixPrinter = struct {
                 );
             }
 
-            if (x < rows - 1) {
+            if (j < rows - 1) {
                 try self.buffer.append(self.allocator, '\n');
             }
         }
     }
 
-    inline fn print_horizontal(self: *@This(), mtrx: *LinearMatrix) !void {
-        const matrix = mtrx.vector().?;
-        const metadata = mtrx.metadata().?;
+    inline fn print_horizontal(self: *@This(), matrix: *LinearMatrix) !void {
+        if (self.reverse) {
+            try self.print_horizontal_impl(matrix, true);
+        } else {
+            try self.print_horizontal_impl(matrix, false);
+        }
+    }
 
-        const rows = mtrx.rows_len();
-        const cols = mtrx.cols_len();
+    inline fn print_horizontal_impl(
+        self: *@This(),
+        matrix: *LinearMatrix,
+        comptime reverse: bool,
+    ) !void {
+        const vector = matrix.vector().?;
+        const metadata = matrix.metadata().?;
 
-        for (0..cols) |y| {
+        const rows = matrix.rows_len();
+        const cols = matrix.cols_len();
+
+        for (0..cols) |i| {
+            const y = if (reverse) (cols - 1 - i) else i;
+
             const meta = metadata[y];
 
-            for (0..rows) |x| {
+            for (0..rows) |j| {
+                const x = if (reverse) (rows - 1 - j) else j;
+
                 const col_start = x * cols;
 
                 try self.print_cell(
-                    matrix,
+                    vector,
                     meta,
                     rows,
                     col_start,
@@ -162,7 +203,7 @@ pub const LinearMatrixPrinter = struct {
                 );
             }
 
-            if (y < cols - 1) {
+            if (i < cols - 1) {
                 try self.buffer.append(self.allocator, '\n');
             }
         }
@@ -170,27 +211,22 @@ pub const LinearMatrixPrinter = struct {
 
     inline fn print_cell(
         self: *@This(),
-        matrix: [][]const u8,
+        vector: [][]const u8,
         meta: Meta,
         rows: usize,
         col_start: usize,
         x: usize,
         y: usize,
     ) !void {
-        if (meta.delay > 0) {
+        const render = should_render_cell(meta, x);
+        if (!render) {
             try self.buffer.append(self.allocator, ' ');
             return;
         }
 
-        const cursor = meta.cursor;
-        if (meta.loop == 0 and cursor < x) {
-            try self.buffer.append(self.allocator, ' ');
-            return;
-        }
+        const scale_index = (rows + meta.cursor - x) % rows;
 
-        const scaleIndex = (rows + cursor - x) % rows;
-
-        const color = self.scale.find_unsafe(scaleIndex) orelse {
+        const color = self.scale.find_unsafe(scale_index) orelse {
             try self.buffer.append(self.allocator, ' ');
             return;
         };
@@ -200,9 +236,135 @@ pub const LinearMatrixPrinter = struct {
             color[0],
             color[1],
             color[2],
-            matrix[col_start + y],
+            vector[col_start + y],
         );
 
         try self.buffer.appendSlice(self.allocator, formatted);
     }
+
+    inline fn should_render_cell(meta: Meta, x: usize) bool {
+        if (meta.delay > 0) {
+            return false;
+        }
+
+        if (meta.loop == 0 and meta.cursor < x) {
+            return false;
+        }
+
+        if (meta.pause_pending and meta.cursor >= x) {
+            return false;
+        }
+
+        return true;
+    }
 };
+
+test "should_render_cell returns false when delay is positive" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 1,
+        .loop = 1,
+        .pause_pending = false,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 5),
+    );
+}
+
+test "should_render_cell handles initial loop (loop == 0) and cursor position" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 0,
+        .loop = 0,
+        .pause_pending = false,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 3),
+    );
+}
+
+test "should_render_cell handles completed loops (loop > 0) without pause pending" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 0,
+        .loop = 1,
+        .pause_pending = false,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 5),
+    );
+}
+
+test "should_render_cell handles pause_pending behavior" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 0,
+        .loop = 1,
+        .pause_pending = true,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        LinearMatrixPrinter.should_render_cell(meta, 3),
+    );
+}
+
+test "should_render_cell combines loop == 0 and pause_pending correctly" {
+    const meta: Meta = .{
+        .cursor = 2,
+        .delay = 0,
+        .loop = 0,
+        .pause_pending = true,
+        .pause_cycles = 0,
+    };
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 0),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 2),
+    );
+
+    try std.testing.expect(
+        !LinearMatrixPrinter.should_render_cell(meta, 3),
+    );
+}
