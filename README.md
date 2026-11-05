@@ -194,8 +194,8 @@ The simulation accepts keyboard input while running.
 | `d` | Toggle rain on and off. Active drops finish their current animation cycle before stopping. |
 | `o` | Toggle the matrix orientation between vertical and horizontal. |
 | `f` | Toggle the matrix flux direction between normal and reverse. |
-| `+` | Increase the frame delay by 10 ms, up to 3000 ms. |
-| `-` | Decrease the frame delay by 10 ms, down to 0 ms. |
+| `,` | Scroll the help output horizontally to the left. |
+| `.` | Scroll the help output horizontally to the right. |
 | `q`, `Ctrl+C` | Request a clean exit. |
 
 Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. The input and rendering threads communicate through atomic game state, which stores the current matrix orientation and flux direction, as well as pending drain and flux requests.

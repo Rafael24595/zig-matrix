@@ -32,7 +32,8 @@ pub fn print_debug(
     config: *const configuration.Configuration,
     printer: *Printer,
     context: *RenderContext,
-) !void {
+    target_cursor: usize,
+) !usize {
     var allocator = scratch.allocator();
 
     var matrix = context.matrix;
@@ -54,7 +55,11 @@ pub fn print_debug(
     else
         .normal;
 
-    const header = try printer.format(
+    var max_cursor: usize = 0;
+
+    const header = try printer.format_limited(
+        target_cursor,
+        cols,
         "{}: {s}",
         .{
             build.name,
@@ -62,7 +67,11 @@ pub fn print_debug(
         },
     );
 
-    const memory = try printer.format(
+    max_cursor = header.max_cursor;
+
+    const memory = try printer.format_limited(
+        target_cursor,
+        cols,
         "Persistent memory: {d} bytes | " ++
             "Scratch memory: {d} bytes | " ++
             "Paused: {any} | " ++
@@ -75,7 +84,11 @@ pub fn print_debug(
         },
     );
 
-    const runtime_1 = try printer.format(
+    max_cursor = @max(max_cursor, memory.max_cursor);
+
+    const runtime_1 = try printer.format_limited(
+        target_cursor,
+        cols,
         "Speed: {d}ms | " ++
             "Ascii: {any} | " ++
             "Rain: {any} | " ++
@@ -94,7 +107,11 @@ pub fn print_debug(
         },
     );
 
-    const runtime_2 = try printer.format(
+    max_cursor = @max(max_cursor, runtime_1.max_cursor);
+
+    const runtime_2 = try printer.format_limited(
+        target_cursor,
+        cols,
         "Seed: {d} | " ++
             "Matrix: {d} | " ++
             "Columns: {d} | " ++
@@ -113,6 +130,8 @@ pub fn print_debug(
         },
     );
 
+    max_cursor = @max(max_cursor, runtime_2.max_cursor);
+
     try printer.printf(
         "{s}{s}\n" ++
             "{s}{s}\n" ++
@@ -129,13 +148,26 @@ pub fn print_debug(
             runtime_2.text,
         },
     );
+
+    return @max(max_cursor, runtime_2.max_cursor);
 }
 
 /// Prints the keyboard shortcuts available to control the application.
 ///
 /// Returns an error if printing the controls fails.
-pub fn print_controls(printer: *Printer) !void {
-    const app_controls = try printer.format(
+pub fn print_controls(
+    printer: *Printer,
+    context: *RenderContext,
+    target_cursor: usize,
+) !usize {
+    const matrix = context.matrix;
+    const cols = matrix.cols_len();
+
+    var max_cursor: usize = 0;
+
+    const app_controls = try printer.format_limited(
+        target_cursor,
+        cols,
         "Pause: [{s}] | " ++
             "Inc sleep: [{s}] | " ++
             "Dec sleep: [{s}] | " ++
@@ -152,7 +184,11 @@ pub fn print_controls(printer: *Printer) !void {
         },
     );
 
-    const trm_controls = try printer.format(
+    max_cursor = app_controls.max_cursor;
+
+    const trm_controls = try printer.format_limited(
+        target_cursor,
+        cols,
         "Scroll left: [{s}] | " ++
             "Scroll right: [{s}] | " ++
             "Show debug: [{s}] | " ++
@@ -177,4 +213,6 @@ pub fn print_controls(printer: *Printer) !void {
             trm_controls.text,
         },
     );
+
+    return @max(max_cursor, trm_controls.max_cursor);
 }
