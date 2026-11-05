@@ -6,6 +6,8 @@ const terminal_kit = @import("terminal_kit");
 
 const kit_time = terminal_kit.time;
 
+const console = terminal_kit.console;
+
 const AllocatorTracer = terminal_kit.allocator.AllocatorTracer;
 const RuntimeState = terminal_kit.runtime_state.RuntimeState;
 const Printer = terminal_kit.printer.Printer;
@@ -39,14 +41,7 @@ pub fn print_debug(
     const rows = matrix.rows_len();
     const area = rows * cols;
 
-    var end_ms = std.time.milliTimestamp();
-    if (state.pause.load(.acquire)) {
-        end_ms = state.pause_timestamp.load(.acquire);
-    }
-
-    const start_timestamp = state.start_timestamp.load(.acquire);
-
-    const time = try kit_time.milliseconds_to_time(allocator, end_ms - start_timestamp, null);
+    const time = try kit_time.milliseconds_to_time(allocator, state.get_runtime(), null);
     defer allocator.free(time);
 
     const orientation: Orientation = if (context.matrix_printer.vertical)
@@ -59,50 +54,127 @@ pub fn print_debug(
     else
         .normal;
 
-    try printer.printf("{}: {s} \n", .{
-        build.name,
-        build.version,
-    });
+    const header = try printer.format(
+        "{}: {s}",
+        .{
+            build.name,
+            build.version,
+        },
+    );
 
-    try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused: {any} | FPS: {d} \n", .{
-        persistent.bytes(),
-        scratch.bytes(),
-        state.is_paused(),
-        context.counter.get_frame_rate(std.time.ms_per_s),
-    });
+    const memory = try printer.format(
+        "Persistent memory: {d} bytes | " ++
+            "Scratch memory: {d} bytes | " ++
+            "Paused: {any} | " ++
+            "FPS: {d}",
+        .{
+            persistent.bytes(),
+            scratch.bytes(),
+            state.is_paused(),
+            context.counter.get_frame_rate(std.time.ms_per_s),
+        },
+    );
 
-    try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any} | Flux: {any} \n", .{
-        state.get_speed(),
-        config.symbol_mode,
-        config.rain_color,
-        config.matrix_mode,
-        config.color_mode,
-        orientation,
-        flux,
-    });
+    const runtime_1 = try printer.format(
+        "Speed: {d}ms | " ++
+            "Ascii: {any} | " ++
+            "Rain: {any} | " ++
+            "Mode: {any} | " ++
+            "Formatter: {any} | " ++
+            "Orientation: {any} | " ++
+            "Flux: {any}",
+        .{
+            state.get_speed(),
+            config.symbol_mode,
+            config.rain_color,
+            config.matrix_mode,
+            config.color_mode,
+            orientation,
+            flux,
+        },
+    );
 
-    try printer.printf("Seed: {d} | Matrix: {d} | Columns: {d} | Rows: {d} | Drop length: {d} | Drain: {any} | Time: {s} \n", .{
-        config.seed,
-        area,
-        cols,
-        rows,
-        config.drop_len,
-        matrix.pause_requested,
-        time,
-    });
+    const runtime_2 = try printer.format(
+        "Seed: {d} | " ++
+            "Matrix: {d} | " ++
+            "Columns: {d} | " ++
+            "Rows: {d} | " ++
+            "Drop length: {d} | " ++
+            "Drain: {any} | " ++
+            "Time: {s}",
+        .{
+            config.seed,
+            area,
+            cols,
+            rows,
+            config.drop_len,
+            matrix.pause_requested,
+            time,
+        },
+    );
+
+    try printer.printf(
+        "{s}{s}\n" ++
+            "{s}{s}\n" ++
+            "{s}{s}\n" ++
+            "{s}{s}\n",
+        .{
+            console.CLEAN_LINE,
+            header.text,
+            console.CLEAN_LINE,
+            memory.text,
+            console.CLEAN_LINE,
+            runtime_1.text,
+            console.CLEAN_LINE,
+            runtime_2.text,
+        },
+    );
 }
 
 /// Prints the keyboard shortcuts available to control the application.
 ///
 /// Returns an error if printing the controls fails.
 pub fn print_controls(printer: *Printer) !void {
-    try printer.printf("\nPause: [{s}] | Increment sleep: [{s}] | Decrement sleep: [{s}] | Drain: [{s}] | Orientation: [{s}] | Flux: [{s}] | Exit: [{s}]", .{
-        "p, space",
-        "+",
-        "-",
-        "d",
-        "o",
-        "f",
-        "q, ctrl+c",
-    });
+    const app_controls = try printer.format(
+        "Pause: [{s}] | " ++
+            "Inc sleep: [{s}] | " ++
+            "Dec sleep: [{s}] | " ++
+            "Drain: [{s}] | " ++
+            "Orientation: [{s}] | " ++
+            "Flux: [{s}]",
+        .{
+            "p, space",
+            "+",
+            "-",
+            "d",
+            "o",
+            "f",
+        },
+    );
+
+    const trm_controls = try printer.format(
+        "Scroll left: [{s}] | " ++
+            "Scroll right: [{s}] | " ++
+            "Show debug: [{s}] | " ++
+            "Show controls: [{s}] | " ++
+            "Exit: [{s}]",
+        .{
+            ",",
+            ".",
+            "/",
+            "?",
+            "q, ctrl+c",
+        },
+    );
+
+    try printer.printf(
+        "\n{s}{s}" ++
+            "\n{s}{s}",
+        .{
+            console.CLEAN_LINE,
+            app_controls.text,
+            console.CLEAN_LINE,
+            trm_controls.text,
+        },
+    );
 }
