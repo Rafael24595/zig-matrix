@@ -49,8 +49,6 @@ pub fn print_debug(
     const time = try kit_time.milliseconds_to_time(allocator, end_ms - start_timestamp, null);
     defer allocator.free(time);
 
-    const paused = state.pause.load(.acquire);
-
     const orientation: Orientation = if (context.matrix_printer.vertical)
         .vertical
     else
@@ -69,12 +67,12 @@ pub fn print_debug(
     try printer.printf("Persistent memory: {d} bytes | Scratch memory: {d} bytes | Paused: {any} | FPS: {d} \n", .{
         persistent.bytes(),
         scratch.bytes(),
-        paused,
+        state.is_paused(),
         context.counter.get_frame_rate(std.time.ms_per_s),
     });
 
     try printer.printf("Speed: {d}ms | Ascii: {any} | Rain: {any} | Mode: {any} | Formatter: {any} | Orientation: {any} | Flux: {any} \n", .{
-        state.speed_ms.load(.acquire),
+        state.get_speed(),
         config.symbol_mode,
         config.rain_color,
         config.matrix_mode,

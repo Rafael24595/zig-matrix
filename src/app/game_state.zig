@@ -19,6 +19,18 @@ pub const GameState = struct {
     /// Indicates the current flux state of the game (normal or reverse).
     flux: std.atomic.Value(Flux) = .init(.normal),
 
+    /// Initializes a new GameState with the specified orientation and flux.
+    /// The drain and flux request flags are initialized to false.
+    pub fn init(
+        orientation: Orientation,
+        flux: Flux,
+    ) @This() {
+        return .{
+            .orientation = .init(orientation),
+            .flux = .init(flux),
+        };
+    }
+
     /// Requests a drain, setting the drain flag to true.
     pub fn request_drain(self: *@This()) void {
         self.drain_requested.store(true, .release);
@@ -39,6 +51,11 @@ pub const GameState = struct {
         return self.flux_requested.swap(false, .acq_rel);
     }
 
+    /// Returns the current orientation of the game (vertical or horizontal).
+    pub fn get_orientation(self: @This()) Orientation {
+        return self.orientation.load(.acquire);
+    }
+
     /// Toggles the orientation between vertical and horizontal.
     pub fn toggle_orientation(self: *@This()) void {
         const last = self.orientation.load(.acquire);
@@ -49,6 +66,11 @@ pub const GameState = struct {
             .vertical;
 
         self.orientation.store(orientation, .release);
+    }
+
+    /// Returns the current flux state of the game (normal or reverse).
+    pub fn get_flux(self: @This()) Flux {
+        return self.flux.load(.acquire);
     }
 
     /// Toggles the flux state between normal and reverse.

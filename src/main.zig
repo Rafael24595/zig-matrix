@@ -68,15 +68,15 @@ pub fn main() !void {
         &printer,
     );
 
-    var state = runtime.RuntimeState{};
+    var state = runtime.RuntimeState.init(
+        config.start_ms,
+        config.milliseconds,
+    );
 
-    state.start_timestamp.store(config.start_ms, .release);
-    state.speed_ms.store(config.milliseconds, .release);
-
-    var game_state = GameState{};
-
-    game_state.orientation.store(config.orientation, .release);
-    game_state.flux.store(config.flux, .release);
+    var game_state = GameState.init(
+        config.orientation,
+        config.flux,
+    );
 
     try console.enable_ansi();
     try console.enable_utf8();
@@ -213,7 +213,7 @@ inline fn run_render_cycle(
 
         try context.matrix_printer.print(&context.matrix);
 
-        if (!state.pause.load(.acquire)) {
+        if (!state.is_paused()) {
             try context.matrix.next();
         }
 
@@ -221,7 +221,7 @@ inline fn run_render_cycle(
             try debug.print_controls(printer);
         }
 
-        const speed = state.speed_ms.load(.acquire);
+        const speed = state.get_speed();
         try state.wait_for_frame(speed * std.time.ns_per_ms);
 
         printer.reset();
