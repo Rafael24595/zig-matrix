@@ -4,6 +4,8 @@ A configurable, terminal-based Matrix-style digital rain effect written in Zig. 
 
 Customize the rain with different symbol sets, colors, gradients, movement modes, and rendering orientations.
 
+![Matrix Effect](.img/matrix.gif)
+
 > **Terminal compatibility:** The project has been tested with Windows Terminal 1.23.13503.0. Rendering performance and character display may vary across terminal emulators. If RGB rendering is slow, try `ansi` mode; use `none` mode when color output is unnecessary. Keyboard input and character rendering may vary across terminal emulators.
 
 ## Features
