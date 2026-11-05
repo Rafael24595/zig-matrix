@@ -196,6 +196,8 @@ The simulation accepts keyboard input while running.
 | `f` | Toggle the matrix flux direction between normal and reverse. |
 | `,` | Scroll the help output horizontally to the left. |
 | `.` | Scroll the help output horizontally to the right. |
+| `/` | Toggle debug output on and off. |
+| `?` | Toggle controls output on and off. |
 | `q`, `Ctrl+C` | Request a clean exit. |
 
 Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. The input and rendering threads communicate through atomic game state, which stores the current matrix orientation and flux direction, as well as pending drain and flux requests.

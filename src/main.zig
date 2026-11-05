@@ -293,6 +293,14 @@ fn run_input_loop(
             '.' => {
                 state.inc_help_cursor();
             },
+            '/' => {
+                state.toggle_debug();
+                state.request_reload();
+            },
+            '?' => {
+                state.toggle_controls();
+                state.request_reload();
+            },
             'q', 'Q', console.CTRL_C => {
                 state.request_exit();
             },
