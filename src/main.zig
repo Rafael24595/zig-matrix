@@ -193,7 +193,7 @@ inline fn run_render_cycle(
 
     while (!runtime.should_exit(state) and !runtime.should_reload(state)) {
         if (game_state.consume_drain()) {
-            context.matrix.toggle_pause();
+            context.matrix.toggle_drain();
         }
 
         if (game_state.consume_flux()) {

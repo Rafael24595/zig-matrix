@@ -24,12 +24,12 @@ pub const Meta = struct {
     /// Number of times the cursor has completed a full cycle through the rows.
     loop: usize,
 
-    /// Indicates whether the column is currently paused. A paused column will
+    /// Indicates whether the column is currently drained. A drained column will
     /// not advance its cursor until it is reset by the matrix.
-    pause_pending: bool = false,
-    /// Number of cycles the column has been paused. A column is considered
-    /// fully paused when this value is greater than zero.
-    pause_cycles: usize = 0,
+    drain_pending: bool = false,
+    /// Number of cycles the column has been drained. A column is considered
+    /// fully drained when this value is greater than zero.
+    drain_cycles: usize = 0,
 };
 
 /// Stores a linear matrix of symbols and the animation metadata for its columns.
@@ -64,9 +64,9 @@ pub const LinearMatrix = struct {
     /// Animation state for each column, or null before allocation.
     meta: ?[]Meta = null,
 
-    /// Indicates whether a pause has been requested for the matrix. When true,
-    /// all columns will enter a paused state on the next update.
-    pause_requested: bool = false,
+    /// Indicates whether a drain has been requested for the matrix. When true,
+    /// all columns will enter a drained state on the next update.
+    drain_requested: bool = false,
 
     /// Creates a matrix using the provided allocator and borrowed dependencies.
     /// Does not allocate matrix storage until `build` is called.
@@ -163,10 +163,10 @@ pub const LinearMatrix = struct {
         return self.rows;
     }
 
-    /// Requests a pause for the matrix, causing all columns to enter a paused state on the next update.
-    /// If the matrix is already paused, this function unlocks the pause and allows the columns to resume advancing.
-    pub fn toggle_pause(self: *@This()) void {
-        self.pause_requested = !self.pause_requested;
+    /// Requests a drain for the matrix, causing all columns to enter a drained state on the next update.
+    /// If the matrix is already drained, this function unlocks the drain and allows the columns to resume advancing.
+    pub fn toggle_drain(self: *@This()) void {
+        self.drain_requested = !self.drain_requested;
     }
 
     /// Advances the animation state of each column by one update.
@@ -183,16 +183,16 @@ pub const LinearMatrix = struct {
 
         const meta = self.meta orelse return;
 
-        if (self.pause_requested) {
+        if (self.drain_requested) {
             for (meta) |*col| {
-                self.advance_to_pause(col);
+                self.advance_to_drain(col);
             }
             return;
         }
 
         for (meta) |*col| {
-            if (col.pause_pending) {
-                self.advance_to_pause(col);
+            if (col.drain_pending) {
+                self.advance_to_drain(col);
             } else {
                 self.advance_column(col);
             }
@@ -201,28 +201,28 @@ pub const LinearMatrix = struct {
         self.reset();
     }
 
-    inline fn advance_to_pause(self: *@This(), col: *Meta) void {
+    inline fn advance_to_drain(self: *@This(), col: *Meta) void {
         if (col.delay > 0) {
             return;
         }
 
-        if (!col.pause_pending) {
+        if (!col.drain_pending) {
             self.advance_column(col);
             if (col.cursor > 0) {
                 return;
             }
 
-            col.pause_pending = true;
-            col.pause_cycles = 0;
+            col.drain_pending = true;
+            col.drain_cycles = 0;
         }
 
-        if (col.pause_cycles == 0) {
+        if (col.drain_cycles == 0) {
             self.advance_column(col);
             if (col.cursor > 0) {
                 return;
             }
 
-            col.pause_cycles += 1;
+            col.drain_cycles += 1;
         }
 
         col.delay = 1;
@@ -245,7 +245,7 @@ pub const LinearMatrix = struct {
 
     inline fn reset(self: *@This()) void {
         for (self.meta.?[0..self.cols]) |*col| {
-            if (!col.pause_pending or col.pause_cycles == 0) {
+            if (!col.drain_pending or col.drain_cycles == 0) {
                 continue;
             }
 
@@ -255,8 +255,8 @@ pub const LinearMatrix = struct {
                 .cursor = 0,
                 .loop = 0,
                 .delay = delay,
-                .pause_pending = false,
-                .pause_cycles = 0,
+                .drain_pending = false,
+                .drain_cycles = 0,
             };
         }
     }
@@ -287,8 +287,8 @@ fn make_test_matrix(
         .cursor = 0,
         .delay = 0,
         .loop = 0,
-        .pause_pending = false,
-        .pause_cycles = 0,
+        .drain_pending = false,
+        .drain_cycles = 0,
     };
 
     return matrix;
@@ -384,13 +384,13 @@ test "next wraps the cursor and increments the completed cycle count" {
     try std.testing.expectEqual(3, matrix.meta.?[0].loop);
 }
 
-test "pause preserves the delay while it is positive" {
+test "drain preserves the delay while it is positive" {
     const allocator = std.testing.allocator;
 
     var matrix = try make_test_matrix(allocator, 4);
     defer matrix.free();
 
-    matrix.pause_requested = true;
+    matrix.drain_requested = true;
     matrix.meta.?[0].cursor = 1;
     matrix.meta.?[0].delay = 2;
 
@@ -398,16 +398,16 @@ test "pause preserves the delay while it is positive" {
 
     try std.testing.expectEqual(1, matrix.meta.?[0].cursor);
     try std.testing.expectEqual(2, matrix.meta.?[0].delay);
-    try std.testing.expect(!matrix.meta.?[0].pause_pending);
+    try std.testing.expect(!matrix.meta.?[0].drain_pending);
 }
 
-test "pause finishes the current cycle before stopping the column" {
+test "drain finishes the current cycle before stopping the column" {
     const allocator = std.testing.allocator;
 
     var matrix = try make_test_matrix(allocator, 3);
     defer matrix.free();
 
-    matrix.pause_requested = true;
+    matrix.drain_requested = true;
     matrix.meta.?[0].cursor = 1;
 
     try matrix.next();
@@ -417,10 +417,10 @@ test "pause finishes the current cycle before stopping the column" {
     try matrix.next();
 
     try std.testing.expectEqual(1, matrix.meta.?[0].cursor);
-    try std.testing.expect(matrix.meta.?[0].pause_pending);
+    try std.testing.expect(matrix.meta.?[0].drain_pending);
 }
 
-test "toggle_pause changes the global pause request" {
+test "toggle_drain changes the global drain request" {
     const allocator = std.testing.allocator;
 
     var matrix = LinearMatrix.init(
@@ -431,11 +431,11 @@ test "toggle_pause changes the global pause request" {
         .wall,
     );
 
-    try std.testing.expect(!matrix.pause_requested);
+    try std.testing.expect(!matrix.drain_requested);
 
-    matrix.toggle_pause();
-    try std.testing.expect(matrix.pause_requested);
+    matrix.toggle_drain();
+    try std.testing.expect(matrix.drain_requested);
 
-    matrix.toggle_pause();
-    try std.testing.expect(!matrix.pause_requested);
+    matrix.toggle_drain();
+    try std.testing.expect(!matrix.drain_requested);
 }

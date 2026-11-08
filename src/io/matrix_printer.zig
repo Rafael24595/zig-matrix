@@ -251,7 +251,7 @@ pub const LinearMatrixPrinter = struct {
             return false;
         }
 
-        if (meta.pause_pending and meta.cursor >= x) {
+        if (meta.drain_pending and meta.cursor >= x) {
             return false;
         }
 
@@ -264,8 +264,8 @@ test "should_render_cell returns false when delay is positive" {
         .cursor = 2,
         .delay = 1,
         .loop = 1,
-        .pause_pending = false,
-        .pause_cycles = 0,
+        .drain_pending = false,
+        .drain_cycles = 0,
     };
 
     try std.testing.expect(
@@ -286,8 +286,8 @@ test "should_render_cell handles initial loop (loop == 0) and cursor position" {
         .cursor = 2,
         .delay = 0,
         .loop = 0,
-        .pause_pending = false,
-        .pause_cycles = 0,
+        .drain_pending = false,
+        .drain_cycles = 0,
     };
 
     try std.testing.expect(
@@ -308,8 +308,8 @@ test "should_render_cell handles completed loops (loop > 0) without pause pendin
         .cursor = 2,
         .delay = 0,
         .loop = 1,
-        .pause_pending = false,
-        .pause_cycles = 0,
+        .drain_pending = false,
+        .drain_cycles = 0,
     };
 
     try std.testing.expect(
@@ -330,8 +330,8 @@ test "should_render_cell handles pause_pending behavior" {
         .cursor = 2,
         .delay = 0,
         .loop = 1,
-        .pause_pending = true,
-        .pause_cycles = 0,
+        .drain_pending = true,
+        .drain_cycles = 0,
     };
 
     try std.testing.expect(
@@ -352,8 +352,8 @@ test "should_render_cell combines loop == 0 and pause_pending correctly" {
         .cursor = 2,
         .delay = 0,
         .loop = 0,
-        .pause_pending = true,
-        .pause_cycles = 0,
+        .drain_pending = true,
+        .drain_cycles = 0,
     };
 
     try std.testing.expect(
