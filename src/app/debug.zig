@@ -96,21 +96,19 @@ pub fn print_debug(
     const runtime_1 = try printer.format_limited(
         target_cursor,
         width,
-        "Speed: {d}ms | " ++
-            "Ascii: {any} | " ++
-            "Rain: {any} | " ++
-            "Mode: {any} | " ++
-            "Formatter: {any} | " ++
-            "Orientation: {any} | " ++
-            "Flux: {any}",
+        "Seed: {d} | " ++
+            "Formatter: {s} | " ++
+            "Ascii: {s} | " ++
+            "Rain: {s} | " ++
+            "Mode: {s} | " ++
+            "Drop length: {s}",
         .{
-            state.get_speed(),
-            config.symbol_mode,
-            config.rain_color,
-            config.matrix_mode,
-            config.color_mode,
-            orientation,
-            flux,
+            config.seed,
+            @tagName(config.color_mode),
+            @tagName(config.symbol_mode),
+            @tagName(config.rain_color),
+            @tagName(config.matrix_mode),
+            drop_len,
         },
     );
 
@@ -119,20 +117,22 @@ pub fn print_debug(
     const runtime_2 = try printer.format_limited(
         target_cursor,
         width,
-        "Seed: {d} | " ++
+        "Speed: {d}ms | " ++
             "Matrix: {d} | " ++
-            "Columns: {d} | " ++
+            "Cols: {d} | " ++
             "Rows: {d} | " ++
-            "Drop length: {d} | " ++
+            "Orientation: {s} | " ++
+            "Flux: {s} | " ++
             "Drain: {any} | " ++
             "Time: {s}",
         .{
-            config.seed,
+            state.get_speed(),
             area,
             cols,
             rows,
-            config.drop_len,
-            matrix.pause_requested,
+            @tagName(orientation),
+            @tagName(flux),
+            matrix.drain_requested,
             time,
         },
     );
