@@ -212,6 +212,7 @@ inline fn run_render_cycle(
                 persistent,
                 scratch,
                 config,
+                winsize,
                 printer,
                 &context,
                 target_cursor,
@@ -229,7 +230,7 @@ inline fn run_render_cycle(
         if (state.show_controls()) {
             const result = try debug.print_controls(
                 printer,
-                &context,
+                winsize,
                 target_cursor,
             );
 

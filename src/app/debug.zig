@@ -30,13 +30,15 @@ pub fn print_debug(
     persistent: *AllocatorTracer,
     scratch: *AllocatorTracer,
     config: *const configuration.Configuration,
+    winsize: console.WinSize,
     printer: *Printer,
     context: *RenderContext,
     target_cursor: usize,
 ) !usize {
     const allocator = scratch.allocator();
 
-    var matrix = context.matrix;
+    const width = winsize.cols;
+    const matrix = context.matrix;
 
     const cols = matrix.cols_len();
     const rows = matrix.rows_len();
@@ -76,7 +78,7 @@ pub fn print_debug(
 
     const memory = try printer.format_limited(
         target_cursor,
-        cols,
+        width,
         "Persistent memory: {d} bytes | " ++
             "Scratch memory: {d} bytes | " ++
             "Paused: {any} | " ++
@@ -93,7 +95,7 @@ pub fn print_debug(
 
     const runtime_1 = try printer.format_limited(
         target_cursor,
-        cols,
+        width,
         "Speed: {d}ms | " ++
             "Ascii: {any} | " ++
             "Rain: {any} | " ++
@@ -116,7 +118,7 @@ pub fn print_debug(
 
     const runtime_2 = try printer.format_limited(
         target_cursor,
-        cols,
+        width,
         "Seed: {d} | " ++
             "Matrix: {d} | " ++
             "Columns: {d} | " ++
@@ -162,17 +164,16 @@ pub fn print_debug(
 /// Returns an error if printing the controls fails.
 pub fn print_controls(
     printer: *Printer,
-    context: *RenderContext,
+    winsize: console.WinSize,
     target_cursor: usize,
 ) !usize {
-    const matrix = context.matrix;
-    const cols = matrix.cols_len();
+    const width = winsize.cols;
 
     var max_cursor: usize = 0;
 
     const app_controls = try printer.format_limited(
         target_cursor,
-        cols,
+        width,
         "Pause: [{s}] | " ++
             "Inc sleep: [{s}] | " ++
             "Dec sleep: [{s}] | " ++
@@ -193,7 +194,7 @@ pub fn print_controls(
 
     const trm_controls = try printer.format_limited(
         target_cursor,
-        cols,
+        width,
         "Scroll left: [{s}] | " ++
             "Scroll right: [{s}] | " ++
             "Show debug: [{s}] | " ++
