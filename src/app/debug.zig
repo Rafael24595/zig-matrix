@@ -34,7 +34,7 @@ pub fn print_debug(
     context: *RenderContext,
     target_cursor: usize,
 ) !usize {
-    var allocator = scratch.allocator();
+    const allocator = scratch.allocator();
 
     var matrix = context.matrix;
 
@@ -44,6 +44,11 @@ pub fn print_debug(
 
     const time = try kit_time.milliseconds_to_time(allocator, state.get_runtime(), null);
     defer allocator.free(time);
+
+    const drop_len = if (config.drop_len == 0)
+        try printer.format("{d}%", .{config.drop_per})
+    else
+        try printer.format("{d}", .{config.drop_len});
 
     const orientation: Orientation = if (context.matrix_printer.vertical)
         .vertical
