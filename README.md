@@ -169,6 +169,8 @@ A black terminal background is recommended for the intended Matrix-style appeara
 
 RGB rendering may perform differently depending on the terminal emulator. If performance is an issue, try ANSI color mode or disable colors entirely.
 
+Frame rate stability may vary depending on the operating system. In testing, Linux provides more consistent frame pacing and smoother animation than Windows, where frame timing may fluctuate more noticeably. This difference may also depend on the terminal emulator and system configuration.
+
 ## Debug Mode
 
 Enable debug output with `-d` to inspect runtime information, including:
