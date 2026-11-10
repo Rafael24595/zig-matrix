@@ -5,6 +5,8 @@ const terminal_kit = @import("terminal_kit");
 const Counter = terminal_kit.frame.Counter;
 
 const console = terminal_kit.console;
+const clock = terminal_kit.clock;
+
 const Printer = terminal_kit.printer.Printer;
 const RuntimeState = terminal_kit.runtime_state.RuntimeState;
 const SplitMix64 = terminal_kit.splitmix64.SplitMix64;
@@ -103,7 +105,7 @@ pub const RenderContext = struct {
 
         errdefer self.matrix_printer.free();
 
-        self.counter = Counter.init();
+        self.counter = Counter.init(config.clock);
     }
 
     /// Releases the resources owned by the rendering context.
@@ -140,6 +142,7 @@ inline fn calculate_drop_lenght(config: *const configuration.Configuration, rows
 
 test "calculate_padding returns zero when debug and controls are disabled" {
     var state = RuntimeState{
+        .clock = clock.system_clock,
         .debug = .init(false),
         .controls = .init(false),
     };
@@ -149,6 +152,7 @@ test "calculate_padding returns zero when debug and controls are disabled" {
 
 test "calculate_padding reserves space for debug output" {
     var state = RuntimeState{
+        .clock = clock.system_clock,
         .debug = .init(true),
         .controls = .init(false),
     };
@@ -158,6 +162,7 @@ test "calculate_padding reserves space for debug output" {
 
 test "calculate_padding reserves space for controls" {
     var state = RuntimeState{
+        .clock = clock.system_clock,
         .debug = .init(false),
         .controls = .init(true),
     };
@@ -167,6 +172,7 @@ test "calculate_padding reserves space for controls" {
 
 test "calculate_padding reserves space for debug output and controls" {
     var state = RuntimeState{
+        .clock = clock.system_clock,
         .debug = .init(true),
         .controls = .init(true),
     };
@@ -176,6 +182,7 @@ test "calculate_padding reserves space for debug output and controls" {
 
 test "calculate_drop_lenght uses the configured drop length" {
     const config = configuration.Configuration{
+        .clock = clock.system_clock,
         .drop_len = 12,
         .drop_per = 0.5,
     };
@@ -185,6 +192,7 @@ test "calculate_drop_lenght uses the configured drop length" {
 
 test "calculate_drop_lenght derives the length from the row count" {
     const config = configuration.Configuration{
+        .clock = clock.system_clock,
         .drop_len = 0,
         .drop_per = 0.5,
     };
@@ -194,6 +202,7 @@ test "calculate_drop_lenght derives the length from the row count" {
 
 test "calculate_drop_lenght returns zero for zero rows" {
     const config = configuration.Configuration{
+        .clock = clock.system_clock,
         .drop_len = 0,
         .drop_per = 0.5,
     };

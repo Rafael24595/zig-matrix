@@ -5,6 +5,7 @@ const build = @import("build.zig.zon");
 
 const terminal_kit = @import("terminal_kit");
 
+const Clock = terminal_kit.clock.Clock;
 const Printer = terminal_kit.printer.Printer;
 
 const Flag = terminal_kit.configuration.Flag;
@@ -140,6 +141,9 @@ const FLAG_FLUX_MODE: Flag = Flag{
 /// Stores the application settings parsed from command-line arguments,
 /// including rendering options, animation timing and matrix appearance.
 pub const Configuration = struct {
+    /// Clock used to obtain timestamps for the application.
+    clock: Clock,
+
     /// Enables diagnostic information during execution.
     debug: bool = false,
     /// Enables the display of keyboard controls.
@@ -189,10 +193,13 @@ pub const Configuration = struct {
     /// Exits the process for help, version, or unknown arguments.
     pub fn init(
         allocator: std.mem.Allocator,
+        clock: Clock,
         printer: *Printer,
         args: [][:0]u8,
     ) !kit_conf.InitResult(Configuration) {
-        var config = Configuration{};
+        var config = Configuration{
+            .clock = clock,
+        };
 
         var i: usize = 1;
         while (i < args.len) : (i += 1) {
@@ -285,12 +292,14 @@ pub const Configuration = struct {
             };
         }
 
-        const timestamp = std.time.milliTimestamp();
+        const timestamp = config.clock.now();
 
         config.start_ms = timestamp;
 
         if (config.seed == 0) {
-            config.seed = @intCast(timestamp);
+            config.seed = @intCast(
+                std.time.milliTimestamp(),
+            );
         }
 
         return .{ .run = config };
@@ -412,17 +421,24 @@ pub const Configuration = struct {
 ///
 /// Allocates the argument list using `allocator` and releases it before
 /// returning. Propagates errors from argument allocation and parsing.
-pub fn from_args(allocator: std.mem.Allocator, printer: *Printer) !Configuration {
+pub fn from_args(
+    allocator: std.mem.Allocator,
+    clock: Clock,
+    printer: *Printer,
+) !Configuration {
     return kit_conf.from_args(
         Configuration,
         allocator,
+        clock,
         printer,
         Configuration.init,
     );
 }
 
 test "Configuration uses the expected default values" {
-    const config = Configuration{};
+    const config = Configuration{
+        .clock = undefined,
+    };
 
     try std.testing.expect(!config.debug);
     try std.testing.expect(!config.controls);
