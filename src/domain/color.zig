@@ -30,7 +30,10 @@ pub const ColorScale = struct {
         base: [3]u8,
         mode: ThemeGradient,
     ) !@This() {
-        var self = ColorScale{ .allocator = allocator, .mode = mode };
+        var self = ColorScale{
+            .allocator = allocator,
+            .mode = mode,
+        };
 
         self.map = try self.allocator.alloc([3]u8, scale + 1);
 
@@ -201,7 +204,7 @@ test "correct RGB values for known colors" {
 
 test "init creates map with correct length" {
     const allocator = std.testing.allocator;
-    
+
     const base = [3]u8{ 128, 128, 128 };
     var scale = try ColorScale.init(allocator, 10, base, ThemeGradient.linear);
     defer scale.free();
