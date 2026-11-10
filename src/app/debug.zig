@@ -30,13 +30,15 @@ pub fn print_debug(
     persistent: *AllocatorTracer,
     scratch: *AllocatorTracer,
     config: *const configuration.Configuration,
+    winsize: console.WinSize,
     printer: *Printer,
     context: *RenderContext,
     target_cursor: usize,
 ) !usize {
-    var allocator = scratch.allocator();
+    const allocator = scratch.allocator();
 
-    var matrix = context.matrix;
+    const width = winsize.cols;
+    const matrix = context.matrix;
 
     const cols = matrix.cols_len();
     const rows = matrix.rows_len();
@@ -44,6 +46,11 @@ pub fn print_debug(
 
     const time = try kit_time.milliseconds_to_time(allocator, state.get_runtime(), null);
     defer allocator.free(time);
+
+    const drop_len = if (config.drop_len == 0)
+        try printer.format("{d}%", .{config.drop_per})
+    else
+        try printer.format("{d}", .{config.drop_len});
 
     const orientation: Orientation = if (context.matrix_printer.vertical)
         .vertical
@@ -71,7 +78,7 @@ pub fn print_debug(
 
     const memory = try printer.format_limited(
         target_cursor,
-        cols,
+        width,
         "Persistent memory: {d} bytes | " ++
             "Scratch memory: {d} bytes | " ++
             "Paused: {any} | " ++
@@ -88,22 +95,20 @@ pub fn print_debug(
 
     const runtime_1 = try printer.format_limited(
         target_cursor,
-        cols,
-        "Speed: {d}ms | " ++
-            "Ascii: {any} | " ++
-            "Rain: {any} | " ++
-            "Mode: {any} | " ++
-            "Formatter: {any} | " ++
-            "Orientation: {any} | " ++
-            "Flux: {any}",
+        width,
+        "Seed: {d} | " ++
+            "Formatter: {s} | " ++
+            "Ascii: {s} | " ++
+            "Rain: {s} | " ++
+            "Mode: {s} | " ++
+            "Drop length: {s}",
         .{
-            state.get_speed(),
-            config.symbol_mode,
-            config.rain_color,
-            config.matrix_mode,
-            config.color_mode,
-            orientation,
-            flux,
+            config.seed,
+            @tagName(config.color_mode),
+            @tagName(config.symbol_mode),
+            @tagName(config.rain_color),
+            @tagName(config.matrix_mode),
+            drop_len,
         },
     );
 
@@ -111,21 +116,23 @@ pub fn print_debug(
 
     const runtime_2 = try printer.format_limited(
         target_cursor,
-        cols,
-        "Seed: {d} | " ++
+        width,
+        "Speed: {d}ms | " ++
             "Matrix: {d} | " ++
-            "Columns: {d} | " ++
+            "Cols: {d} | " ++
             "Rows: {d} | " ++
-            "Drop length: {d} | " ++
+            "Orientation: {s} | " ++
+            "Flux: {s} | " ++
             "Drain: {any} | " ++
             "Time: {s}",
         .{
-            config.seed,
+            state.get_speed(),
             area,
             cols,
             rows,
-            config.drop_len,
-            matrix.pause_requested,
+            @tagName(orientation),
+            @tagName(flux),
+            matrix.drain_requested,
             time,
         },
     );
@@ -157,17 +164,16 @@ pub fn print_debug(
 /// Returns an error if printing the controls fails.
 pub fn print_controls(
     printer: *Printer,
-    context: *RenderContext,
+    winsize: console.WinSize,
     target_cursor: usize,
 ) !usize {
-    const matrix = context.matrix;
-    const cols = matrix.cols_len();
+    const width = winsize.cols;
 
     var max_cursor: usize = 0;
 
     const app_controls = try printer.format_limited(
         target_cursor,
-        cols,
+        width,
         "Pause: [{s}] | " ++
             "Inc sleep: [{s}] | " ++
             "Dec sleep: [{s}] | " ++
@@ -188,7 +194,7 @@ pub fn print_controls(
 
     const trm_controls = try printer.format_limited(
         target_cursor,
-        cols,
+        width,
         "Scroll left: [{s}] | " ++
             "Scroll right: [{s}] | " ++
             "Show debug: [{s}] | " ++
