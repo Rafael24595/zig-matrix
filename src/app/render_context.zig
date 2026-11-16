@@ -84,7 +84,6 @@ pub const RenderContext = struct {
             allocator,
             rng,
             generator,
-            &self.scale,
             config.matrix_mode,
         );
 
