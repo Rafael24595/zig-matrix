@@ -60,6 +60,9 @@ pub const LinearMatrix = struct {
     /// Animation state for each column, or null before allocation.
     meta: ?[]Meta = null,
 
+    /// Number of rows that a symbol can drop before it is considered fully drained.
+    drop: usize,
+
     /// Indicates whether a drain has been requested for the matrix. When true,
     /// all columns will enter a drained state on the next update.
     drain_requested: bool = false,
@@ -71,12 +74,14 @@ pub const LinearMatrix = struct {
         rng: *SplitMix64,
         ascii: *AsciiGenerator,
         mode: Mode,
+        drop: usize,
     ) @This() {
         return LinearMatrix{
             .allocator = allocator,
             .rng = rng,
             .ascii = ascii,
             .mode = mode,
+            .drop = drop,
         };
     }
 
@@ -210,7 +215,8 @@ pub const LinearMatrix = struct {
             col.drain_cycles = 0;
         }
 
-        if (col.drain_cycles == 0) {
+        const cycles = (self.drop / self.cols) + 1;
+        if (col.drain_cycles < cycles) {
             self.advance_column(col);
             if (col.cursor > 0) {
                 return;
@@ -265,6 +271,7 @@ fn make_test_matrix(
         undefined,
         undefined,
         undefined,
+        0,
     );
 
     matrix.cols = 1;
@@ -307,6 +314,7 @@ test "free is safe before build" {
         undefined,
         undefined,
         undefined,
+        0,
     );
 
     matrix.free();
@@ -323,6 +331,7 @@ test "matrix state before build" {
         undefined,
         undefined,
         undefined,
+        0,
     );
 
     try std.testing.expect(matrix.mtrx == null);
@@ -419,6 +428,7 @@ test "toggle_drain changes the global drain request" {
         undefined,
         undefined,
         undefined,
+        0,
     );
 
     try std.testing.expect(!matrix.drain_requested);

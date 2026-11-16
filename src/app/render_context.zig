@@ -85,6 +85,7 @@ pub const RenderContext = struct {
             rng,
             generator,
             config.matrix_mode,
+            drop,
         );
 
         errdefer self.matrix.free();
