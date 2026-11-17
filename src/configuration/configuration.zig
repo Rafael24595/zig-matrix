@@ -24,6 +24,8 @@ const Direction = @import("../domain/direction.zig").Direction;
 
 const formatter = @import("../io/formatter.zig");
 
+const HelperExpandValues = "(use \"help\" to list available modes)";
+
 pub const InitResult = union(enum) {
     run: Configuration,
     inf: void,
@@ -88,7 +90,7 @@ const FLAG_THEME_COLOR: Flag = Flag{
     .type = "<enum>",
     .desc = "Theme color",
     .name = "theme color",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = HelperExpandValues,
 };
 
 const FLAG_THEME_GRADIENT: Flag = Flag{
@@ -96,7 +98,7 @@ const FLAG_THEME_GRADIENT: Flag = Flag{
     .type = "<enum>",
     .desc = "Theme gradient",
     .name = "theme gradient",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = HelperExpandValues,
 };
 
 const FLAG_THEME_SYMBOL: Flag = Flag{
@@ -104,7 +106,7 @@ const FLAG_THEME_SYMBOL: Flag = Flag{
     .type = "<enum>",
     .desc = "Theme symbol",
     .name = "Theme symbol",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = HelperExpandValues,
 };
 
 const FLAG_MATRIX_MODE: Flag = Flag{
@@ -112,7 +114,7 @@ const FLAG_MATRIX_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Matrix mode",
     .name = "matrix mode",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = HelperExpandValues,
 };
 
 const FLAG_COLOR_MODE: Flag = Flag{
@@ -120,7 +122,7 @@ const FLAG_COLOR_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Color color",
     .name = "color color",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = HelperExpandValues,
 };
 
 const FLAG_ORIENTATION_MODE: Flag = Flag{
@@ -128,7 +130,7 @@ const FLAG_ORIENTATION_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Matrix orientation",
     .name = "orientation",
-    .aux_desc = "(vertical or horizontal)",
+    .aux_desc = HelperExpandValues,
 };
 
 const FLAG_DIRECTION_MODE: Flag = Flag{
@@ -136,7 +138,7 @@ const FLAG_DIRECTION_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Matrix direction",
     .name = "direction",
-    .aux_desc = "(normal or reverse)",
+    .aux_desc = HelperExpandValues,
 };
 
 /// Stores the application settings parsed from command-line arguments,
