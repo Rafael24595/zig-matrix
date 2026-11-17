@@ -18,8 +18,8 @@ const configuration = @import("../configuration/configuration.zig");
 
 const RenderContext = @import("./render_context.zig").RenderContext;
 
-const Flux = @import("../domain/flux.zig").Flux;
 const Orientation = @import("../domain/orientation.zig").Orientation;
+const Direction = @import("../domain/direction.zig").Direction;
 
 /// Prints diagnostic information about the application, runtime state,
 /// memory usage, rendering configuration, and current matrix dimensions.
@@ -52,7 +52,7 @@ pub fn print_debug(
     else
         try printer.format("{d}", .{config.drop_len});
 
-    const orientation: Orientation = if (context.matrix_printer.vertical)
+    const direction: Direction = if (context.matrix_printer.vertical)
         .vertical
     else
         .horizontal;
@@ -122,7 +122,7 @@ pub fn print_debug(
             "Cols: {d} | " ++
             "Rows: {d} | " ++
             "Orientation: {s} | " ++
-            "Flux: {s} | " ++
+            "Direction: {s} | " ++
             "Drain: {any} | " ++
             "Time: {s}",
         .{
@@ -131,7 +131,7 @@ pub fn print_debug(
             cols,
             rows,
             @tagName(orientation),
-            @tagName(flux),
+            @tagName(direction),
             matrix.drain_requested,
             time,
         },
@@ -179,7 +179,7 @@ pub fn print_controls(
             "Dec sleep: [{s}] | " ++
             "Drain: [{s}] | " ++
             "Orientation: [{s}] | " ++
-            "Flux: [{s}]",
+            "Direction: [{s}]",
         .{
             "p, space",
             "+",

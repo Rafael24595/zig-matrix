@@ -28,7 +28,7 @@ pub const LinearMatrixPrinter = struct {
     /// Whether rows are rendered vertically rather than horizontally.
     vertical: bool,
     /// Whether the matrix is rendered in reverse order.
-    reverse: bool,
+    direction: bool,
 
     /// Accumulates the complete formatted frame before output.
     buffer: std.ArrayList(u8),
@@ -47,7 +47,7 @@ pub const LinearMatrixPrinter = struct {
         scale: *ColorScale,
         matrix: *LinearMatrix,
         vertical: bool,
-        reverse: bool,
+        direction: bool,
     ) !@This() {
         const rows = matrix.rows_len();
         const cols = matrix.cols_len();
@@ -72,7 +72,7 @@ pub const LinearMatrixPrinter = struct {
             .prefix = prefix,
             .sufix = sufix,
             .vertical = vertical,
-            .reverse = reverse,
+            .direction = direction,
             .buffer = buffer,
             .format = format,
         };
@@ -85,8 +85,8 @@ pub const LinearMatrixPrinter = struct {
     }
 
     /// Toggles the reverse rendering mode of the matrix printer.
-    pub fn toggle_reverse(self: *@This()) void {
-        self.reverse = !self.reverse;
+    pub fn toggle_direction(self: *@This()) void {
+        self.direction = !self.direction;
     }
 
     /// Formats and emits the current matrix frame.
@@ -120,7 +120,7 @@ pub const LinearMatrixPrinter = struct {
     }
 
     inline fn print_vertical(self: *@This(), matrix: *LinearMatrix) !void {
-        if (self.reverse) {
+        if (self.direction) {
             try self.print_vertical_impl(matrix, true);
         } else {
             try self.print_vertical_impl(matrix, false);
@@ -165,7 +165,7 @@ pub const LinearMatrixPrinter = struct {
     }
 
     inline fn print_horizontal(self: *@This(), matrix: *LinearMatrix) !void {
-        if (self.reverse) {
+        if (self.direction) {
             try self.print_horizontal_impl(matrix, true);
         } else {
             try self.print_horizontal_impl(matrix, false);

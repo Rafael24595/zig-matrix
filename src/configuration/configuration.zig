@@ -17,9 +17,10 @@ const kit_color = terminal_kit.color;
 const Theme = @import("../domain/symbol.zig").Theme;
 const ThemeGradient = @import("../domain/color.zig").ThemeGradient;
 
-const Flux = @import("../domain/flux.zig").Flux;
 const Mode = @import("../domain/matrix.zig").Mode;
+
 const Orientation = @import("../domain/orientation.zig").Orientation;
+const Direction = @import("../domain/direction.zig").Direction;
 
 const formatter = @import("../io/formatter.zig");
 
@@ -130,11 +131,11 @@ const FLAG_ORIENTATION_MODE: Flag = Flag{
     .aux_desc = "(vertical or horizontal)",
 };
 
-const FLAG_FLUX_MODE: Flag = Flag{
+const FLAG_DIRECTION_MODE: Flag = Flag{
     .flag_short = "-f",
     .type = "<enum>",
-    .desc = "Matrix flux",
-    .name = "flux",
+    .desc = "Matrix direction",
+    .name = "direction",
     .aux_desc = "(normal or reverse)",
 };
 
@@ -184,7 +185,7 @@ pub const Configuration = struct {
     /// Direction in which the matrix is rendered.
     orientation: Orientation = .vertical,
     /// Direction in which the matrix flows.
-    flux: Flux = .normal,
+    direction: Direction = .normal,
 
     /// Parses command-line arguments into a configuration.
     ///
@@ -281,8 +282,8 @@ pub const Configuration = struct {
                 continue;
             }
 
-            if (std.mem.eql(u8, arg, FLAG_FLUX_MODE.flag_short)) {
-                config.flux = try kit_conf.parse_enum(Flux, printer, args, i, FLAG_FLUX_MODE);
+            if (std.mem.eql(u8, arg, FLAG_DIRECTION_MODE.flag_short)) {
+                config.direction = try kit_conf.parse_enum(Direction, printer, args, i, FLAG_DIRECTION_MODE);
                 i += 1;
                 continue;
             }
@@ -409,8 +410,8 @@ pub const Configuration = struct {
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
-            FLAG_FLUX_MODE,
-            .{ .str = @tagName(config.flux) },
+            FLAG_DIRECTION_MODE,
+            .{ .str = @tagName(config.direction) },
         ));
 
         return buffer.items;
@@ -455,6 +456,7 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(Theme.default, config.symbol_mode);
     try std.testing.expectEqual(Mode.rain, config.matrix_mode);
     try std.testing.expectEqual(Orientation.vertical, config.orientation);
+    try std.testing.expectEqual(Direction.normal, config.direction);
 
     try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
 }

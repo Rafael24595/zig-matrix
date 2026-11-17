@@ -57,7 +57,7 @@ pub const RenderContext = struct {
         const space = calculate_padding(state);
 
         const vertical = game_state.get_orientation() == .vertical;
-        const reverse = game_state.get_flux() == .reverse;
+        const reverse = game_state.get_direction() == .reverse;
 
         const cols = if (vertical)
             winsize.cols
