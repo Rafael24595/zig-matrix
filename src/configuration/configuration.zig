@@ -57,7 +57,7 @@ const FLAG_DEBUG: Flag = Flag{
 };
 
 const FLAG_HELP_CONTROLS: Flag = Flag{
-    .flag_short = "-hc",
+    .flag_short = "-k",
     .desc = "Show the controls map",
     .name = "controls map",
 };
