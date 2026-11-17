@@ -150,11 +150,11 @@ test "GameState initial orientation and direction are vertical and normal" {
     const state = GameState{};
 
     try testing.expectEqual(
-        Orientation.vertical,
+        .vertical,
         state.orientation.load(.monotonic),
     );
     try testing.expectEqual(
-        Direction.normal,
+        .normal,
         state.direction.load(.monotonic),
     );
 }
@@ -164,13 +164,13 @@ test "toggle_orientation alternates between vertical and horizontal" {
 
     state.toggle_orientation();
     try testing.expectEqual(
-        Orientation.horizontal,
+        .horizontal,
         state.orientation.load(.monotonic),
     );
 
     state.toggle_orientation();
     try testing.expectEqual(
-        Orientation.vertical,
+        .vertical,
         state.orientation.load(.monotonic),
     );
 }
@@ -180,13 +180,13 @@ test "toggle_direction alternates between normal and reverse" {
 
     state.toggle_direction();
     try testing.expectEqual(
-        Direction.reverse,
+        .reverse,
         state.direction.load(.monotonic),
     );
 
     state.toggle_direction();
     try testing.expectEqual(
-        Direction.normal,
+        .normal,
         state.direction.load(.monotonic),
     );
 }

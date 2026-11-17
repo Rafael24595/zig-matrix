@@ -461,12 +461,12 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(0.4, config.drop_per);
     try std.testing.expectEqual(0, config.drop_len);
 
-    try std.testing.expectEqual(kit_color.Color.green, config.rain_color);
-    try std.testing.expectEqual(ThemeGradient.default, config.rain_mode);
-    try std.testing.expectEqual(Theme.default, config.symbol_mode);
-    try std.testing.expectEqual(Mode.rain, config.matrix_mode);
-    try std.testing.expectEqual(Orientation.vertical, config.orientation);
-    try std.testing.expectEqual(Direction.normal, config.direction);
+    try std.testing.expectEqual(.green, config.rain_color);
+    try std.testing.expectEqual(.default, config.rain_mode);
+    try std.testing.expectEqual(.default, config.symbol_mode);
+    try std.testing.expectEqual(.rain, config.matrix_mode);
+    try std.testing.expectEqual(.vertical, config.orientation);
+    try std.testing.expectEqual(.normal, config.direction);
 
-    try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
+    try std.testing.expectEqual(.rgb, config.color_mode);
 }
