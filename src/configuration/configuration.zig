@@ -330,7 +330,9 @@ pub const Configuration = struct {
             .{config.drop_per},
         );
 
-        try buffer.appendSlice(allocator, "\nUsage: zig-matrix             [options] \n\n");
+        try buffer.appendSlice(allocator, "\nUsage: zig-matrix             [options] \n");
+
+        try buffer.appendSlice(allocator, "\n System: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
@@ -343,6 +345,8 @@ pub const Configuration = struct {
             FLAG_VERSION,
             .none,
         ));
+
+        try buffer.appendSlice(allocator, "\n Runtime: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
@@ -374,6 +378,8 @@ pub const Configuration = struct {
             .{ .str = drop_default },
         ));
 
+        try buffer.appendSlice(allocator, "\n Appearance: \n");
+
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
             FLAG_THEME_COLOR,
@@ -391,6 +397,8 @@ pub const Configuration = struct {
             FLAG_THEME_SYMBOL,
             .{ .str = @tagName(config.symbol_mode) },
         ));
+
+        try buffer.appendSlice(allocator, "\n Matrix: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
