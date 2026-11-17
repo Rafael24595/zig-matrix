@@ -18,8 +18,9 @@ const configuration = @import("../configuration/configuration.zig");
 
 const RenderContext = @import("./render_context.zig").RenderContext;
 
-const Flux = @import("../domain/flux.zig").Flux;
 const Orientation = @import("../domain/orientation.zig").Orientation;
+const Direction = @import("../domain/direction.zig").Direction;
+const Origin = @import("../domain/origin.zig").Origin;
 
 /// Prints diagnostic information about the application, runtime state,
 /// memory usage, rendering configuration, and current matrix dimensions.
@@ -52,12 +53,7 @@ pub fn print_debug(
     else
         try printer.format("{d}", .{config.drop_len});
 
-    const orientation: Orientation = if (context.matrix_printer.vertical)
-        .vertical
-    else
-        .horizontal;
-
-    const flux: Flux = if (context.matrix_printer.reverse)
+    const direction: Direction = if (context.matrix_printer.direction)
         .reverse
     else
         .normal;
@@ -114,6 +110,21 @@ pub fn print_debug(
 
     max_cursor = @max(max_cursor, runtime_1.max_cursor);
 
+    var runtime_origin: []u8 = "";
+    if (context.matrix_printer.orientation == .diagonal) {
+        const origin: Origin = if (context.matrix_printer.origin)
+            .start
+        else
+            .end;
+
+        runtime_origin = try printer.format(
+            "Origin: {s} | ",
+            .{
+                @tagName(origin),
+            },
+        );
+    }
+
     const runtime_2 = try printer.format_limited(
         target_cursor,
         width,
@@ -122,7 +133,8 @@ pub fn print_debug(
             "Cols: {d} | " ++
             "Rows: {d} | " ++
             "Orientation: {s} | " ++
-            "Flux: {s} | " ++
+            "Direction: {s} | " ++
+            "{s}" ++
             "Drain: {any} | " ++
             "Time: {s}",
         .{
@@ -130,8 +142,9 @@ pub fn print_debug(
             area,
             cols,
             rows,
-            @tagName(orientation),
-            @tagName(flux),
+            @tagName(context.matrix_printer.orientation),
+            @tagName(direction),
+            runtime_origin,
             matrix.drain_requested,
             time,
         },
@@ -179,7 +192,8 @@ pub fn print_controls(
             "Dec sleep: [{s}] | " ++
             "Drain: [{s}] | " ++
             "Orientation: [{s}] | " ++
-            "Flux: [{s}]",
+            "Direction: [{s}] | " ++
+            "Origin: [{s}]",
         .{
             "p, space",
             "+",
@@ -187,6 +201,7 @@ pub fn print_controls(
             "d",
             "o",
             "f",
+            "s",
         },
     );
 

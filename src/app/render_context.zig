@@ -56,15 +56,17 @@ pub const RenderContext = struct {
     ) !void {
         const space = calculate_padding(state);
 
-        const vertical = game_state.get_orientation() == .vertical;
-        const reverse = game_state.get_flux() == .reverse;
+        const orientation = game_state.get_orientation();
 
-        const cols = if (vertical)
+        const direction = game_state.get_direction() == .reverse;
+        const origin = game_state.get_origin() == .start;
+
+        const cols = if (orientation == .vertical or orientation == .diagonal)
             winsize.cols
         else
             winsize.rows - space;
 
-        const rows = if (vertical)
+        const rows = if (orientation == .vertical or orientation == .diagonal)
             winsize.rows - space
         else
             winsize.cols;
@@ -84,8 +86,8 @@ pub const RenderContext = struct {
             allocator,
             rng,
             generator,
-            &self.scale,
             config.matrix_mode,
+            drop,
         );
 
         errdefer self.matrix.free();
@@ -99,8 +101,9 @@ pub const RenderContext = struct {
             config.formatter_cell,
             &self.scale,
             &self.matrix,
-            vertical,
-            reverse,
+            orientation,
+            direction,
+            origin,
         );
 
         errdefer self.matrix_printer.free();

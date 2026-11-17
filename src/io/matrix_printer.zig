@@ -7,6 +7,13 @@ const Printer = @import("terminal_kit").printer.Printer;
 const ColorScale = @import("../domain/color.zig").ColorScale;
 const LinearMatrix = @import("../domain/matrix.zig").LinearMatrix;
 const Meta = @import("../domain/matrix.zig").Meta;
+const Orientation = @import("../domain/orientation.zig").Orientation;
+
+const TOP_LEFT: u8 = 0b0000_0001;
+const TOP_RIGHT: u8 = 0b0000_0011;
+
+const BOTTOM_LEFT: u8 = 0b0000_0000;
+const BOTTOM_RIGHT: u8 = 0b0000_0010;
 
 /// Renders a linear matrix as formatted terminal output.
 pub const LinearMatrixPrinter = struct {
@@ -26,9 +33,11 @@ pub const LinearMatrixPrinter = struct {
     sufix: []const u8,
 
     /// Whether rows are rendered vertically rather than horizontally.
-    vertical: bool,
+    orientation: Orientation,
     /// Whether the matrix is rendered in reverse order.
-    reverse: bool,
+    direction: bool,
+    /// Whether the matrix is rendered from the start or end origin.
+    origin: bool,
 
     /// Accumulates the complete formatted frame before output.
     buffer: std.ArrayList(u8),
@@ -46,8 +55,9 @@ pub const LinearMatrixPrinter = struct {
         fmt_cell: formatter.FormatterCellUnion,
         scale: *ColorScale,
         matrix: *LinearMatrix,
-        vertical: bool,
-        reverse: bool,
+        orientation: Orientation,
+        direction: bool,
+        origin: bool,
     ) !@This() {
         const rows = matrix.rows_len();
         const cols = matrix.cols_len();
@@ -71,8 +81,9 @@ pub const LinearMatrixPrinter = struct {
             .formatter = fmt_cell,
             .prefix = prefix,
             .sufix = sufix,
-            .vertical = vertical,
-            .reverse = reverse,
+            .orientation = orientation,
+            .direction = direction,
+            .origin = origin,
             .buffer = buffer,
             .format = format,
         };
@@ -85,8 +96,13 @@ pub const LinearMatrixPrinter = struct {
     }
 
     /// Toggles the reverse rendering mode of the matrix printer.
-    pub fn toggle_reverse(self: *@This()) void {
-        self.reverse = !self.reverse;
+    pub fn toggle_direction(self: *@This()) void {
+        self.direction = !self.direction;
+    }
+
+    /// Toggles the origin rendering mode of the matrix printer.
+    pub fn toggle_origin(self: *@This()) void {
+        self.origin = !self.origin;
     }
 
     /// Formats and emits the current matrix frame.
@@ -105,10 +121,10 @@ pub const LinearMatrixPrinter = struct {
             try self.buffer.appendSlice(self.allocator, prefix);
         }
 
-        if (self.vertical) {
-            try self.print_vertical(matrix);
-        } else {
-            try self.print_horizontal(matrix);
+        switch (self.orientation) {
+            .vertical => try self.print_vertical(matrix),
+            .horizontal => try self.print_horizontal(matrix),
+            .diagonal => try self.print_diagonal(matrix),
         }
 
         const sufix = self.sufix;
@@ -120,7 +136,7 @@ pub const LinearMatrixPrinter = struct {
     }
 
     inline fn print_vertical(self: *@This(), matrix: *LinearMatrix) !void {
-        if (self.reverse) {
+        if (self.direction) {
             try self.print_vertical_impl(matrix, true);
         } else {
             try self.print_vertical_impl(matrix, false);
@@ -165,7 +181,7 @@ pub const LinearMatrixPrinter = struct {
     }
 
     inline fn print_horizontal(self: *@This(), matrix: *LinearMatrix) !void {
-        if (self.reverse) {
+        if (self.direction) {
             try self.print_horizontal_impl(matrix, true);
         } else {
             try self.print_horizontal_impl(matrix, false);
@@ -204,6 +220,63 @@ pub const LinearMatrixPrinter = struct {
             }
 
             if (i < cols - 1) {
+                try self.buffer.append(self.allocator, '\n');
+            }
+        }
+    }
+
+    inline fn print_diagonal(self: *@This(), matrix: *LinearMatrix) !void {
+        const origin_byte: u8 = @intFromBool(self.origin);
+        const reverse_byte: u8 = @intFromBool(self.direction);
+
+        var mask = origin_byte;
+        mask |= reverse_byte << 1;
+
+        switch (mask) {
+            TOP_LEFT => try self.print_diagonal_impl(matrix, true, false),
+            TOP_RIGHT => try self.print_diagonal_impl(matrix, true, true),
+            BOTTOM_LEFT => try self.print_diagonal_impl(matrix, false, false),
+            BOTTOM_RIGHT => try self.print_diagonal_impl(matrix, false, true),
+            else => unreachable,
+        }
+    }
+
+    inline fn print_diagonal_impl(
+        self: *@This(),
+        matrix: *LinearMatrix,
+        comptime origin: bool,
+        comptime reverse: bool,
+    ) !void {
+        const vector = matrix.vector().?;
+        const metadata = matrix.metadata().?;
+
+        const rows = matrix.rows_len();
+        const cols = matrix.cols_len();
+
+        for (0..rows) |x| {
+            const row = if (origin) x else rows - 1 - x;
+
+            const offset = row % cols;
+
+            for (0..cols) |y| {
+                const col = if (reverse != origin)
+                    (y + offset) % cols
+                else
+                    (y + cols - offset) % cols;
+
+                const meta = metadata[col];
+
+                try self.print_cell(
+                    vector,
+                    meta,
+                    rows,
+                    row * cols,
+                    row,
+                    col,
+                );
+            }
+
+            if (x < rows - 1) {
                 try self.buffer.append(self.allocator, '\n');
             }
         }

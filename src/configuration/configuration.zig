@@ -17,9 +17,11 @@ const kit_color = terminal_kit.color;
 const Theme = @import("../domain/symbol.zig").Theme;
 const ThemeGradient = @import("../domain/color.zig").ThemeGradient;
 
-const Flux = @import("../domain/flux.zig").Flux;
 const Mode = @import("../domain/matrix.zig").Mode;
+
 const Orientation = @import("../domain/orientation.zig").Orientation;
+const Direction = @import("../domain/direction.zig").Direction;
+const Origin = @import("../domain/origin.zig").Origin;
 
 const formatter = @import("../io/formatter.zig");
 
@@ -56,7 +58,7 @@ const FLAG_DEBUG: Flag = Flag{
 };
 
 const FLAG_HELP_CONTROLS: Flag = Flag{
-    .flag_short = "-hc",
+    .flag_short = "-k",
     .desc = "Show the controls map",
     .name = "controls map",
 };
@@ -87,7 +89,7 @@ const FLAG_THEME_COLOR: Flag = Flag{
     .type = "<enum>",
     .desc = "Theme color",
     .name = "theme color",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 const FLAG_THEME_GRADIENT: Flag = Flag{
@@ -95,7 +97,7 @@ const FLAG_THEME_GRADIENT: Flag = Flag{
     .type = "<enum>",
     .desc = "Theme gradient",
     .name = "theme gradient",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 const FLAG_THEME_SYMBOL: Flag = Flag{
@@ -103,7 +105,7 @@ const FLAG_THEME_SYMBOL: Flag = Flag{
     .type = "<enum>",
     .desc = "Theme symbol",
     .name = "Theme symbol",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 const FLAG_MATRIX_MODE: Flag = Flag{
@@ -111,7 +113,7 @@ const FLAG_MATRIX_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Matrix mode",
     .name = "matrix mode",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 const FLAG_COLOR_MODE: Flag = Flag{
@@ -119,7 +121,7 @@ const FLAG_COLOR_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Color color",
     .name = "color color",
-    .aux_desc = "(use \"help\" to list available modes)",
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 const FLAG_ORIENTATION_MODE: Flag = Flag{
@@ -127,15 +129,23 @@ const FLAG_ORIENTATION_MODE: Flag = Flag{
     .type = "<enum>",
     .desc = "Matrix orientation",
     .name = "orientation",
-    .aux_desc = "(vertical or horizontal)",
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
-const FLAG_FLUX_MODE: Flag = Flag{
+const FLAG_DIRECTION_MODE: Flag = Flag{
     .flag_short = "-f",
     .type = "<enum>",
-    .desc = "Matrix flux",
-    .name = "flux",
-    .aux_desc = "(normal or reverse)",
+    .desc = "Matrix direction",
+    .name = "direction",
+    .aux_desc = kit_conf.HelperExpandValues,
+};
+
+const FLAG_ORIGIN_MODE: Flag = Flag{
+    .flag_short = "-r",
+    .type = "<enum>",
+    .desc = "Matrix origin",
+    .name = "origin",
+    .aux_desc = kit_conf.HelperExpandValues,
 };
 
 /// Stores the application settings parsed from command-line arguments,
@@ -184,7 +194,9 @@ pub const Configuration = struct {
     /// Direction in which the matrix is rendered.
     orientation: Orientation = .vertical,
     /// Direction in which the matrix flows.
-    flux: Flux = .normal,
+    direction: Direction = .normal,
+    /// Origin from which the matrix starts rendering.
+    origin: Origin = .start,
 
     /// Parses command-line arguments into a configuration.
     ///
@@ -281,8 +293,14 @@ pub const Configuration = struct {
                 continue;
             }
 
-            if (std.mem.eql(u8, arg, FLAG_FLUX_MODE.flag_short)) {
-                config.flux = try kit_conf.parse_enum(Flux, printer, args, i, FLAG_FLUX_MODE);
+            if (std.mem.eql(u8, arg, FLAG_DIRECTION_MODE.flag_short)) {
+                config.direction = try kit_conf.parse_enum(Direction, printer, args, i, FLAG_DIRECTION_MODE);
+                i += 1;
+                continue;
+            }
+
+            if (std.mem.eql(u8, arg, FLAG_ORIGIN_MODE.flag_short)) {
+                config.origin = try kit_conf.parse_enum(Origin, printer, args, i, FLAG_ORIGIN_MODE);
                 i += 1;
                 continue;
             }
@@ -327,7 +345,9 @@ pub const Configuration = struct {
             .{config.drop_per},
         );
 
-        try buffer.appendSlice(allocator, "\nUsage: zig-matrix             [options] \n\n");
+        try buffer.appendSlice(allocator, "\nUsage: zig-matrix             [options] \n");
+
+        try buffer.appendSlice(allocator, "\n System: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
@@ -340,6 +360,8 @@ pub const Configuration = struct {
             FLAG_VERSION,
             .none,
         ));
+
+        try buffer.appendSlice(allocator, "\n Runtime: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
@@ -371,6 +393,8 @@ pub const Configuration = struct {
             .{ .str = drop_default },
         ));
 
+        try buffer.appendSlice(allocator, "\n Appearance: \n");
+
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
             FLAG_THEME_COLOR,
@@ -388,6 +412,8 @@ pub const Configuration = struct {
             FLAG_THEME_SYMBOL,
             .{ .str = @tagName(config.symbol_mode) },
         ));
+
+        try buffer.appendSlice(allocator, "\n Matrix: \n");
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
@@ -409,8 +435,14 @@ pub const Configuration = struct {
 
         try buffer.appendSlice(allocator, try kit_conf.format_flag(
             printer,
-            FLAG_FLUX_MODE,
-            .{ .str = @tagName(config.flux) },
+            FLAG_DIRECTION_MODE,
+            .{ .str = @tagName(config.direction) },
+        ));
+
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_ORIGIN_MODE,
+            .{ .str = @tagName(config.origin) },
         ));
 
         return buffer.items;
@@ -450,11 +482,13 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(0.4, config.drop_per);
     try std.testing.expectEqual(0, config.drop_len);
 
-    try std.testing.expectEqual(kit_color.Color.green, config.rain_color);
-    try std.testing.expectEqual(ThemeGradient.default, config.rain_mode);
-    try std.testing.expectEqual(Theme.default, config.symbol_mode);
-    try std.testing.expectEqual(Mode.rain, config.matrix_mode);
-    try std.testing.expectEqual(Orientation.vertical, config.orientation);
+    try std.testing.expectEqual(.green, config.rain_color);
+    try std.testing.expectEqual(.default, config.rain_mode);
+    try std.testing.expectEqual(.default, config.symbol_mode);
+    try std.testing.expectEqual(.rain, config.matrix_mode);
+    try std.testing.expectEqual(.vertical, config.orientation);
+    try std.testing.expectEqual(.normal, config.direction);
+    try std.testing.expectEqual(.start, config.origin);
 
-    try std.testing.expectEqual(formatter.FormatterCode.rgb, config.color_mode);
+    try std.testing.expectEqual(.rgb, config.color_mode);
 }

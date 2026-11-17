@@ -14,8 +14,9 @@ Customize the rain with different symbol sets, colors, gradients, movement modes
 - **Color customization:** Choose from a variety of colors and gradient modes.
 - **Symbol themes:** Select from character sets including binary, digits, Latin, Greek, Cyrillic, runes, and more.
 - **Rendering modes:** Choose between `rain`, `wave`, and `wall`.
-- **Flexible orientation:** Render vertically or horizontally, with runtime switching.
-- **Matrix flux:** Toggle the rendering flow direction between normal and reverse in real time.
+- **Flexible orientation:** Render vertically, horizontally, or diagonally, with runtime switching.
+- **Traversal direction:** Switch between normal and reverse matrix traversal in real time.
+- **Configurable origin:** Choose between start and end origins for diagonal rendering.
 - **Multiple color modes:** Use RGB, ANSI, or no color.
 - **Dynamic terminal sizing:** Adapt the matrix to terminal dimensions and handle window resizing.
 - **Rain control:** Toggle the rain animation on and off, allowing active drops to finish their current cycles before stopping.
@@ -59,23 +60,42 @@ zig-out/bin/zig-matrix --help
 
 ## Command-Line Options
 
+### System
+
 | Option | Description | Default |
 |---|---|---|
 | `-h`, `--help` | Display the help message | — |
 | `-v`, `--version` | Display the project version | — |
+
+### Runtime
+
+| Option | Description | Default |
+|---|---|---|
 | `-d` | Enable debug output | Disabled |
+| `-k` | Display the controls map | Disabled |
 | `-s` | Set the random seed | Current timestamp in milliseconds |
-| `-ms` | Set the frame delay in milliseconds |  `55` ms on Windows; `65` ms on other platforms |
-| `-l` | Set the drop length | `0.4 × matrix height` |
+| `-ms` | Set the frame delay in milliseconds | `55` ms on Windows; `65` ms on other platforms |
+
+### Appearance
+
+| Option | Description | Default |
+|---|---|---|
 | `-tc` | Set the theme color | `green` |
 | `-tg` | Set the theme gradient | `default` |
 | `-ts` | Set the symbol theme | `default` |
+
+### Matrix
+
+| Option | Description | Default |
+|---|---|---|
 | `-mm` | Set the matrix rendering mode | `rain` |
 | `-cm` | Set the color mode | `rgb` |
+| `-l` | Set the drop length | `0.4 × matrix height` |
 | `-o` | Set the matrix orientation | `vertical` |
-| `-f` | Set the matrix flux direction | `normal` |
+| `-f` | Set the matrix traversal direction | `normal` |
+| `-r` | Set the matrix origin | `start` |
 
-The orientation (`-o`) and flux (`-f`) options define the initial rendering state. Both settings can also be changed interactively while the application is running.
+The orientation (`-o`), direction (`-f`), and origin (`-r`) options define the initial matrix rendering state. These settings can also be changed interactively while the application is running, although the origin can only be modified in diagonal orientation.
 
 ### Available values
 
@@ -97,15 +117,19 @@ The orientation (`-o`) and flux (`-f`) options define the initial rendering stat
 
 **Color mode (`-cm`)**
 
-`rgb`, `ansi`, `unfo`
+`rgb`, `ansi`, `none`
 
 **Orientation (`-o`)**
 
-`vertical`, `horizontal`
+`vertical`, `horizontal`, `diagonal`
 
-**Matrix flux (`-f`)**
+**Matrix direction (`-f`)**
 
 `normal`, `reverse`
+
+**Matrix origin (`-r`)**
+
+`start`, `end`
 
 ## Examples
 
@@ -151,6 +175,18 @@ Render horizontally:
 zig-out/bin/zig-matrix -o horizontal
 ```
 
+Render diagonally:
+
+```sh
+zig-out/bin/zig-matrix -o diagonal
+```
+
+Set the matrix origin to the end:
+
+```sh
+zig-out/bin/zig-matrix -o diagonal -r end
+```
+
 Disable color output:
 
 ```sh
@@ -160,7 +196,7 @@ zig-out/bin/zig-matrix -cm none
 Combine multiple options:
 
 ```sh
-zig-out/bin/zig-matrix -tc neon_green -tg circular -ts binary -mm wave -o horizontal
+zig-out/bin/zig-matrix -tc neon_green -tg circular -ts binary -mm wave -o diagonal -f reverse -r end
 ```
 
 ## Terminal Recommendations
@@ -181,8 +217,8 @@ Enable debug output with `-d` to inspect runtime information, including:
 - Frame delay in milliseconds
 - Random seed
 - Symbol theme and color configuration
-- Gradient, matrix rendering mode, and flux direction
-- Matrix orientation and dimensions
+- Gradient, matrix rendering mode, and traversal direction
+- Matrix orientation, origin, and dimensions
 
 ## Interactive Controls
 
@@ -194,21 +230,24 @@ The simulation accepts keyboard input while running.
 | `+` | Increase the frame delay by 10 ms, up to 3000 ms. |
 | `-` | Decrease the frame delay by 10 ms, down to 0 ms. |
 | `d` | Toggle rain on and off. Active drops finish their current animation cycle before stopping. |
-| `o` | Toggle the matrix orientation between vertical and horizontal. |
-| `f` | Toggle the matrix flux direction between normal and reverse. |
+| `o` | Cycle through vertical, horizontal, and diagonal orientations. |
+| `f` | Toggle the matrix traversal direction between normal and reverse. |
+| `s` | Toggle the matrix origin between start and end (diagonal orientation only). |
 | `,` | Scroll the help output horizontally to the left. |
 | `.` | Scroll the help output horizontally to the right. |
 | `/` | Toggle debug output on and off. |
 | `?` | Toggle controls output on and off. |
 | `q`, `Ctrl+C` | Request a clean exit. |
 
-Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. The input and rendering threads communicate through atomic game state, which stores the current matrix orientation and flux direction, as well as pending drain and flux requests.
+Input is processed on a separate thread, allowing the render loop to continue while waiting for key presses. The input and rendering threads communicate through atomic game state, which stores the current matrix orientation, traversal direction, and origin, as well as pending drain, direction, and origin requests.
 
 The rain toggle provides a graceful way to stop and resume the animation. When disabled, each active column finishes its current animation cycle before stopping. When enabled again, the rain resumes. Unlike pausing, which freezes the current frame immediately, toggling the rain off allows pending animation cycles to complete.
 
-The orientation toggle switches the matrix between vertical and horizontal layouts. Changing the orientation requests a render context reload so that the matrix dimensions and layout can be recalculated. The application continues running without requiring a restart.
+The orientation toggle cycles through vertical, horizontal, and diagonal layouts. Changing the orientation requests a render context reload so that matrix dimensions and layout can be recalculated. The application continues running without requiring a restart.
 
-The flux toggle inverts the rendering direction of the matrix in real-time, switching instantly between normal and reverse flows without restarting the application.
+The direction toggle switches the matrix traversal direction between normal and reverse. This change is applied in real time without restarting the application.
+
+The origin toggle switches between start and end origins. This setting only applies to diagonal orientation and determines the starting edge of the diagonal traversal.
 
 ## Shutdown and Signal Handling
 

@@ -1,12 +1,12 @@
 .{
     .name = .zig_matrix,
-    .version = "0.14.0",
+    .version = "0.15.0",
     .fingerprint = 0xb4639a481dce360e,
     .minimum_zig_version = "0.15.1",
     .dependencies = .{
         .terminal_kit = .{
-            .url = "https://github.com/Rafael24595/zig-terminal-kit/releases/download/0.13.0/zig_terminal_kit-0.13.0.tar.gz",
-            .hash = "zig_terminal_kit-0.13.0-MaGLjhzBAQA09VHQJE9pjociMP4q239csYAhYKt4eeNx",
+            .url = "https://github.com/Rafael24595/zig-terminal-kit/releases/download/0.13.2/zig_terminal_kit-0.13.2.tar.gz",
+            .hash = "zig_terminal_kit-0.13.2-MaGLjp3BAQBbzc6Kun_MIl3DzLG4Qj5pq0YV5mYQMRJ0",
         },
     },
     .paths = .{

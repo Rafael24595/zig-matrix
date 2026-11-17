@@ -82,7 +82,8 @@ pub fn main() !void {
 
     var game_state = GameState.init(
         config.orientation,
-        config.flux,
+        config.direction,
+        config.origin,
     );
 
     try console.enable_ansi();
@@ -201,9 +202,14 @@ inline fn run_render_cycle(
             context.matrix.toggle_drain();
         }
 
-        if (game_state.consume_flux()) {
-            context.matrix_printer.toggle_reverse();
-            game_state.toggle_flux();
+        if (game_state.consume_direction()) {
+            context.matrix_printer.toggle_direction();
+            game_state.toggle_direction();
+        }
+
+        if (game_state.consume_origin()) {
+            context.matrix_printer.toggle_origin();
+            game_state.toggle_origin();
         }
 
         try printer.print(console.RESET_CURSOR);
@@ -291,7 +297,12 @@ fn run_input_loop(
                 state.request_reload();
             },
             'f', 'F' => {
-                game_state.request_flux();
+                game_state.request_direction();
+            },
+            's', 'S' => {
+                if (game_state.get_orientation() == .diagonal) {
+                    game_state.request_origin();
+                }
             },
             ',' => {
                 state.dec_help_cursor();
