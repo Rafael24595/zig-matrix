@@ -2,4 +2,5 @@
 pub const Orientation = enum(u8) {
     vertical,
     horizontal,
+    diagonal,
 };

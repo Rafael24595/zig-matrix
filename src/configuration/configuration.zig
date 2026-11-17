@@ -21,6 +21,7 @@ const Mode = @import("../domain/matrix.zig").Mode;
 
 const Orientation = @import("../domain/orientation.zig").Orientation;
 const Direction = @import("../domain/direction.zig").Direction;
+const Origin = @import("../domain/origin.zig").Origin;
 
 const formatter = @import("../io/formatter.zig");
 
@@ -141,6 +142,14 @@ const FLAG_DIRECTION_MODE: Flag = Flag{
     .aux_desc = HelperExpandValues,
 };
 
+const FLAG_ORIGIN_MODE: Flag = Flag{
+    .flag_short = "-r",
+    .type = "<enum>",
+    .desc = "Matrix origin",
+    .name = "origin",
+    .aux_desc = HelperExpandValues,
+};
+
 /// Stores the application settings parsed from command-line arguments,
 /// including rendering options, animation timing and matrix appearance.
 pub const Configuration = struct {
@@ -188,6 +197,8 @@ pub const Configuration = struct {
     orientation: Orientation = .vertical,
     /// Direction in which the matrix flows.
     direction: Direction = .normal,
+    /// Origin from which the matrix starts rendering.
+    origin: Origin = .start,
 
     /// Parses command-line arguments into a configuration.
     ///
@@ -286,6 +297,12 @@ pub const Configuration = struct {
 
             if (std.mem.eql(u8, arg, FLAG_DIRECTION_MODE.flag_short)) {
                 config.direction = try kit_conf.parse_enum(Direction, printer, args, i, FLAG_DIRECTION_MODE);
+                i += 1;
+                continue;
+            }
+
+            if (std.mem.eql(u8, arg, FLAG_ORIGIN_MODE.flag_short)) {
+                config.origin = try kit_conf.parse_enum(Origin, printer, args, i, FLAG_ORIGIN_MODE);
                 i += 1;
                 continue;
             }
@@ -424,6 +441,12 @@ pub const Configuration = struct {
             .{ .str = @tagName(config.direction) },
         ));
 
+        try buffer.appendSlice(allocator, try kit_conf.format_flag(
+            printer,
+            FLAG_ORIGIN_MODE,
+            .{ .str = @tagName(config.origin) },
+        ));
+
         return buffer.items;
     }
 };
@@ -467,6 +490,7 @@ test "Configuration uses the expected default values" {
     try std.testing.expectEqual(.rain, config.matrix_mode);
     try std.testing.expectEqual(.vertical, config.orientation);
     try std.testing.expectEqual(.normal, config.direction);
+    try std.testing.expectEqual(.start, config.origin);
 
     try std.testing.expectEqual(.rgb, config.color_mode);
 }

@@ -83,6 +83,7 @@ pub fn main() !void {
     var game_state = GameState.init(
         config.orientation,
         config.direction,
+        config.origin,
     );
 
     try console.enable_ansi();
@@ -206,6 +207,11 @@ inline fn run_render_cycle(
             game_state.toggle_direction();
         }
 
+        if (game_state.consume_origin()) {
+            context.matrix_printer.toggle_origin();
+            game_state.toggle_origin();
+        }
+
         try printer.print(console.RESET_CURSOR);
 
         var max_cursor: usize = 0;
@@ -292,6 +298,11 @@ fn run_input_loop(
             },
             'f', 'F' => {
                 game_state.request_direction();
+            },
+            's', 'S' => {
+                if (game_state.get_orientation() == .diagonal) {
+                    game_state.request_origin();
+                }
             },
             ',' => {
                 state.dec_help_cursor();
