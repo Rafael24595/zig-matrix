@@ -97,7 +97,7 @@ The orientation (`-o`) and flux (`-f`) options define the initial rendering stat
 
 **Color mode (`-cm`)**
 
-`rgb`, `ansi`, `unfo`
+`rgb`, `ansi`, `none`
 
 **Orientation (`-o`)**
 
